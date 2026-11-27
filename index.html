@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Flick" />
+<meta name="theme-color" content="#000000" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon.svg" />
+<link rel="apple-touch-icon" href="icon-180.png" />
+<title>Flick</title>
+<style>
+  :root { --text:#f5f6fa; --dim:#8b8f9c; --faint:#5a5e6a; --blue:#2f7bff; --ok:#3ddc97;
+          --glass:rgba(255,255,255,.055); --edge:rgba(255,255,255,.12); --hi:rgba(255,255,255,.22); }
+  * { box-sizing:border-box; margin:0; -webkit-tap-highlight-color:transparent; }
+  html, body { height:100%; background:#000; }
+  body { color:var(--text); font:15px/1.4 -apple-system, "SF Pro Display", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif; overflow:hidden; user-select:none; -webkit-user-select:none; }
+  button { font:inherit; color:inherit; border:0; background:none; cursor:pointer; }
+
+  /* underglow */
+  .glow { position:fixed; left:50%; bottom:-38vh; width:140vw; height:70vh; transform:translateX(-50%); border-radius:50%; z-index:0; pointer-events:none;
+          background:radial-gradient(closest-side, rgba(47,123,255,.75), rgba(30,80,220,.35) 45%, transparent 75%); filter:blur(40px); animation:breathe 7s ease-in-out infinite; }
+  .glow.b { bottom:-48vh; width:70vw; height:50vh; background:radial-gradient(closest-side, rgba(140,200,255,.55), transparent 70%); animation-delay:-3s; }
+  @keyframes breathe { 50% { opacity:.7; transform:translateX(-50%) scale(1.06); } }
+
+  .glass { background:var(--glass); backdrop-filter:blur(30px) saturate(160%); -webkit-backdrop-filter:blur(30px) saturate(160%);
+           border:1px solid var(--edge); box-shadow:inset 0 1px 0 var(--hi), inset 0 -1px 0 rgba(255,255,255,.04), 0 20px 50px rgba(0,0,0,.5); }
+
+  .app { position:relative; z-index:1; height:100%; display:flex; flex-direction:column; padding:calc(env(safe-area-inset-top) + 14px) 20px calc(env(safe-area-inset-bottom) + 18px); max-width:1180px; margin:0 auto; }
+  header { display:flex; align-items:center; justify-content:space-between; height:40px; }
+  .logo { display:flex; align-items:center; gap:9px; font-weight:700; font-size:19px; letter-spacing:-.4px; }
+  .logo img { width:26px; height:26px; border-radius:7px; }
+  .me { font-size:13px; color:var(--dim); padding:6px 12px; border-radius:99px; }
+
+  /* island */
+  #island { position:fixed; top:calc(env(safe-area-inset-top) + 8px); left:50%; transform:translateX(-50%) translateY(-30px) scale(.8); opacity:0; z-index:30; cursor:pointer;
+            background:rgba(20,22,28,.75); backdrop-filter:blur(30px) saturate(170%); -webkit-backdrop-filter:blur(30px) saturate(170%); border-radius:99px; padding:8px 14px 8px 8px; display:flex; align-items:center; gap:10px; min-width:220px;
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.2), 0 0 0 1px rgba(255,255,255,.1), 0 10px 40px rgba(0,0,0,.6); transition:transform .5s cubic-bezier(.2,1.3,.4,1), opacity .3s; }
+  #island.show { transform:translateX(-50%) translateY(0) scale(1); opacity:1; }
+  #island .av { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#6aa8ff,#2f5bff); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex:none; }
+  #island .tx { flex:1; line-height:1.2; }
+  #island b { display:block; font-size:13px; }
+  #island span { font-size:12px; color:var(--dim); }
+  #island svg { width:26px; height:26px; flex:none; }
+  #island circle.bar { transition:stroke-dashoffset .2s; }
+
+  /* AirDrop-style wave */
+  #wave { position:fixed; inset:0; z-index:25; pointer-events:none; opacity:0; backdrop-filter:blur(0); -webkit-backdrop-filter:blur(0); }
+  #wave::before { content:""; position:absolute; left:-20%; right:-20%; height:55%; background:radial-gradient(50% 50% at 50% 50%, rgba(255,255,255,.55), rgba(140,190,255,.25) 40%, transparent 70%); filter:blur(20px); }
+  #wave.up { animation:waveFx 1.1s ease forwards; } #wave.up::before { animation:sweepUp 1.1s cubic-bezier(.4,0,.2,1) forwards; }
+  #wave.down { animation:waveFx 1.1s ease forwards; } #wave.down::before { animation:sweepDown 1.1s cubic-bezier(.4,0,.2,1) forwards; }
+  @keyframes waveFx { 0% { opacity:0; backdrop-filter:blur(0); -webkit-backdrop-filter:blur(0); } 25% { opacity:1; backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); } 100% { opacity:0; backdrop-filter:blur(0); -webkit-backdrop-filter:blur(0); } }
+  @keyframes sweepUp { from { top:100%; } to { top:-60%; } }
+  @keyframes sweepDown { from { top:-60%; } to { top:100%; } }
+
+  .lbl { font-size:12px; color:var(--dim); margin:18px 4px 2px; text-align:left; }
+  .r .sub { font-size:12px; color:var(--dim); }
+  /* tile remove + offer picks */
+  .tile .x { position:absolute; top:5px; right:5px; width:22px; height:22px; border-radius:50%; background:rgba(0,0,0,.6); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); font-size:14px; line-height:22px; text-align:center; color:#fff; z-index:2; }
+  .tile .vb { position:absolute; left:6px; bottom:6px; font-size:11px; color:#fff; background:rgba(0,0,0,.55); border-radius:6px; padding:1px 5px; z-index:2; }
+  .tile video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:16px; }
+  .pk { position:relative; aspect-ratio:3/4; border-radius:14px; overflow:hidden; background:rgba(255,255,255,.06); display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:11px; color:var(--dim); padding:6px; text-align:center; word-break:break-all; cursor:pointer; transition:opacity .2s, transform .2s; }
+  .pk img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .pk .ck { position:absolute; top:6px; right:6px; width:22px; height:22px; border-radius:50%; background:#2f7bff; border:2px solid #fff; z-index:2; display:flex; align-items:center; justify-content:center; font-size:12px; color:#fff; }
+  .pk.off { opacity:.35; transform:scale(.94); } .pk.off .ck { background:rgba(0,0,0,.5); color:transparent; }
+  .keys { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px; }
+  .key { padding:14px 6px; border-radius:16px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); font-size:13px; display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .key i { font-style:normal; font-size:20px; }
+  .key:active { background:rgba(75,141,255,.3); }
+  .steps { text-align:left; margin-top:12px; padding:14px 16px; border-radius:16px; background:rgba(47,123,255,.1); border:1px solid rgba(75,141,255,.25); font-size:14px; line-height:1.7; }
+  .big { width:100%; max-height:55vh; object-fit:contain; border-radius:18px; margin-top:16px; background:#000; }
+
+  main { flex:1; display:flex; flex-direction:column; min-height:0; gap:18px; }
+  .desk main { flex-direction:row; }
+  .col { display:flex; flex-direction:column; min-height:0; }
+  .desk .col { flex:1; }
+  .title { font-size:34px; font-weight:600; letter-spacing:-1px; line-height:1.05; margin:18px 0 16px; }
+  .title span { color:var(--faint); }
+
+  /* glowing drop box */
+  .stage { position:relative; border-radius:28px; min-height:200px; display:flex; align-items:center; justify-content:center; text-align:center; padding:20px;
+           background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.16);
+           box-shadow:inset 0 0 30px rgba(255,255,255,.07), inset 0 1px 0 rgba(255,255,255,.3), 0 0 0 6px rgba(255,255,255,.02), 0 0 60px rgba(120,170,255,.08);
+           backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); transition:box-shadow .3s; }
+  .desk .stage { flex:1; }
+  .stage.over, .stage.ready { box-shadow:inset 0 0 40px rgba(140,190,255,.18), inset 0 1px 0 rgba(255,255,255,.35), 0 0 0 6px rgba(120,170,255,.06), 0 0 80px rgba(80,140,255,.25); }
+  .hint .ring { width:44px; height:44px; border-radius:50%; margin:0 auto 12px; display:flex; align-items:center; justify-content:center; background:#000; box-shadow:0 0 0 1px rgba(255,255,255,.15), 0 0 24px rgba(255,255,255,.12); }
+  .hint b { display:block; font-weight:600; font-size:16px; }
+  .hint small { color:var(--dim); font-size:13px; }
+  .tray { display:flex; gap:10px; overflow-x:auto; padding:4px; max-width:100%; scrollbar-width:none; }
+  .tile { flex:none; width:92px; height:118px; border-radius:16px; overflow:hidden; position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px; font-size:11px; color:var(--dim); word-break:break-all; }
+  .tile img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .chip { position:absolute; left:0; top:0; cursor:grab; touch-action:none; }
+
+  @keyframes genieOut { 0% { transform:var(--at,none); clip-path:inset(0 0 0 0 round 16px); opacity:1; }
+    35% { transform:var(--at,none) scaleY(1.08); clip-path:polygon(28% 0,72% 0,100% 100%,0 100%); }
+    100% { transform:var(--at,none) translateY(-110vh) scaleY(.45); clip-path:polygon(49% 0,51% 0,53% 100%,47% 100%); opacity:0; } }
+  @keyframes genieIn { 0% { transform:translateY(-60vh) scaleY(.4); clip-path:polygon(49% 0,51% 0,53% 100%,47% 100%); opacity:0; }
+    45% { clip-path:polygon(40% 0,60% 0,80% 100%,20% 100%); opacity:1; } 80% { transform:scaleY(1.05); } 100% { transform:none; clip-path:inset(0 0 0 0 round 0); } }
+  .out { animation:genieOut .65s cubic-bezier(.55,0,.3,1) forwards; pointer-events:none; }
+  .in { animation:genieIn .75s cubic-bezier(.2,.9,.3,1); }
+
+  /* dock */
+  .dock { display:flex; gap:8px; padding:7px; border-radius:24px; margin-top:14px; }
+  .dock button { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 4px; border-radius:18px; font-size:12px; color:var(--dim); }
+  .dock button svg { width:22px; height:22px; stroke:var(--text); }
+  .dock button.main { background:linear-gradient(180deg,#4b8dff,#2a62f0); color:#fff; box-shadow:inset 0 1px 0 rgba(255,255,255,.4), 0 8px 24px rgba(47,123,255,.4); }
+  .dock button.main svg { stroke:#fff; }
+  #motionRow { margin-top:10px; padding:13px; border-radius:18px; text-align:center; font-weight:600; font-size:14px; }
+
+  /* folders */
+  .sec { display:flex; justify-content:space-between; align-items:baseline; margin:4px 2px 12px; }
+  .sec h2 { font-size:15px; font-weight:600; }
+  .sec button { font-size:13px; color:var(--dim); }
+  .folders { display:flex; gap:16px; overflow-x:auto; padding:30px 4px 6px; scrollbar-width:none; }
+  .desk .folders { flex-wrap:wrap; overflow:auto; align-content:flex-start; }
+  .folders::-webkit-scrollbar { display:none; }
+  .fold { flex:none; width:132px; cursor:pointer; }
+  .fv { position:relative; width:132px; height:104px; }
+  .fv .back { position:absolute; inset:0 0 6px 0; border-radius:12px; background:linear-gradient(#2a2c33,#17181c); box-shadow:inset 0 1px 0 rgba(255,255,255,.12); }
+  .fv .back::before { content:""; position:absolute; left:10px; top:-7px; width:46px; height:12px; border-radius:6px 6px 0 0; background:#2a2c33; }
+  .fv .paper { position:absolute; left:18px; right:18px; top:-18px; height:80px; border-radius:8px; background:#e9ebf0; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,.4); transform-origin:bottom; }
+  .fv .paper img { width:100%; height:100%; object-fit:cover; }
+  .fv .paper:nth-of-type(2) { transform:rotate(-7deg) translateX(-10px); }
+  .fv .paper:nth-of-type(3) { transform:rotate(6deg) translateX(10px) translateY(4px); }
+  .fv .paper .ln { height:6px; margin:10px 10px 0; border-radius:3px; background:#c9ccd4; }
+  .fv .paper .ln.s { width:50%; }
+  .fv .paper .big { font-size:28px; text-align:center; margin-top:14px; }
+  .fv .front { position:absolute; left:0; right:0; bottom:0; height:68px; border-radius:12px;
+               background:linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.08)); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+               border:1px solid rgba(255,255,255,.2); box-shadow:inset 0 1px 0 rgba(255,255,255,.4); }
+  .fv .front::before { content:""; position:absolute; right:0; top:-1px; width:56%; height:14px; border-radius:0 12px 0 0; }
+  .fold .lb { margin-top:10px; font-size:13px; font-weight:500; }
+  .fold .sb { font-size:12px; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .empty { color:var(--faint); font-size:14px; padding:20px 4px; }
+
+  /* sheets */
+  .modal { position:fixed; inset:0; z-index:40; background:rgba(0,0,0,.5); display:none; align-items:flex-end; justify-content:center; }
+  .desk .modal { align-items:center; }
+  .modal.show { display:flex; }
+  .sheet { width:100%; max-width:440px; max-height:80vh; overflow:auto; border-radius:30px; padding:24px 20px calc(env(safe-area-inset-bottom) + 20px); background:rgba(22,23,28,.82); animation:rise .45s cubic-bezier(.2,1,.3,1); }
+  .phone .sheet { border-bottom-left-radius:0; border-bottom-right-radius:0; }
+  @keyframes rise { from { transform:translateY(40px); opacity:0; } }
+  .sheet h3 { font-size:20px; font-weight:600; text-align:center; }
+  .sheet p { color:var(--dim); font-size:14px; text-align:center; margin-top:4px; }
+  .code { font:600 46px/1 ui-monospace, "SF Mono", Consolas, monospace; letter-spacing:12px; text-align:center; margin:22px 0 6px; padding-left:12px; text-shadow:0 0 24px rgba(120,170,255,.5); }
+  .sheet input { width:100%; margin-top:14px; padding:14px; border-radius:16px; border:1px solid var(--edge); background:rgba(0,0,0,.4); color:#fff; font:600 24px ui-monospace, Consolas, monospace; text-align:center; letter-spacing:8px; }
+  .or { margin-top:22px !important; font-size:12px !important; }
+  .btns { display:flex; gap:10px; margin-top:20px; }
+  .btn { flex:1; padding:15px; border-radius:18px; font-weight:600; background:rgba(255,255,255,.08); border:1px solid var(--edge); }
+  .btn.pri { background:linear-gradient(180deg,#4b8dff,#2a62f0); border-color:transparent; box-shadow:inset 0 1px 0 rgba(255,255,255,.4); }
+  .rows { margin-top:16px; display:flex; flex-direction:column; gap:8px; }
+  .r { display:flex; align-items:center; gap:12px; padding:10px; border-radius:16px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.06); cursor:pointer; }
+  .r .th { width:44px; height:44px; border-radius:10px; flex:none; object-fit:cover; background:rgba(255,255,255,.07); display:flex; align-items:center; justify-content:center; font-size:20px; }
+  .r .nm { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; }
+  .r .nm.wrap { white-space:normal; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; }
+  .r .act { color:#8fb8ff; font-weight:600; font-size:14px; }
+
+  #toast { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 24px); transform:translate(-50%,120px); padding:11px 18px; border-radius:99px; font-size:14px; transition:transform .35s cubic-bezier(.2,1.2,.3,1); z-index:50; white-space:nowrap; }
+  #toast.show { transform:translate(-50%,0); }
+  .hidden { display:none !important; }
+</style>
+</head>
+<body>
+<div class="glow"></div><div class="glow b"></div>
+<div id="wave"></div>
+<div id="island"><div class="av" id="isAv"></div><div class="tx"><b id="isName"></b><span id="isStat"></span></div>
+  <svg viewBox="0 0 36 36" id="isRing"><circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="3"/><circle class="bar" cx="18" cy="18" r="15" fill="none" stroke="#4b8dff" stroke-width="3" stroke-linecap="round" stroke-dasharray="94.2" stroke-dashoffset="94.2" transform="rotate(-90 18 18)"/></svg>
+</div>
+
+<div class="app">
+  <header>
+    <div class="logo"><img src="icon.svg" alt="" />Flick</div>
+    <button class="me glass" id="devBtn">Devices</button>
+  </header>
+
+  <main>
+    <div class="col">
+      <div class="title" id="title"></div>
+      <div class="stage" id="stage">
+        <div class="hint" id="hint"></div>
+        <div class="tray hidden" id="tray"></div>
+      </div>
+      <div class="dock glass phone-only">
+        <button class="main" id="pick"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add</button>
+        <button id="cam"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Camera</button>
+        <button id="scan"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10"/></svg>Scan</button>
+        <button id="remote"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>Laptop</button>
+        <button id="sendText"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>Copied</button>
+      </div>
+      <button class="glass phone-only hidden" id="motionRow">Turn on flick</button>
+      <input type="file" id="file" multiple class="hidden" />
+      <input type="file" id="camIn" accept="image/*" capture="environment" class="hidden" />
+      <input type="file" id="scanIn" accept="image/*" multiple class="hidden" />
+    </div>
+    <div class="col">
+      <div class="sec"><h2>Received</h2><button id="clear" class="hidden">Clear</button></div>
+      <div class="folders" id="folders"><div class="empty">Nothing yet</div></div>
+    </div>
+  </main>
+</div>
+
+<div class="modal" id="modal"><div class="sheet glass" id="sheet"></div></div>
+<div id="toast" class="glass"></div>
+
+<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
+<script>
+// ---------- basics ----------
+const $ = (s) => document.querySelector(s);
+const isPhone = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.userAgent));
+document.body.classList.add(isPhone ? 'phone' : 'desk');
+document.querySelectorAll('.phone-only').forEach((e) => !isPhone && e.classList.add('hidden'));
+
+const store = { get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+const rid = (n) => [...crypto.getRandomValues(new Uint8Array(n))].map((b) => b.toString(16).padStart(2, '0')).join('');
+const me = store.get('me') || { id: rid(6), name: isPhone ? 'My iPhone' : 'My laptop' };
+me.kind = isPhone ? 'phone' : 'desk'; store.set('me', me);
+let trusted = store.get('trusted', {});
+const peers = new Map();
+let pending = null;
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const buzz = (p) => navigator.vibrate && navigator.vibrate(p);
+const isImg = (f) => /^image\//.test(f.type || '') && !/heic/i.test(f.type) || /\.(jpe?g|png|gif|webp)$/i.test(f.name || '');
+const isVid = (f) => /^video\//.test(f.type || '') || /\.(mov|mp4)$/i.test(f.name || '');
+const isT = (x) => typeof x?.text === 'string';
+const isUrl = (t) => /^https?:\/\/\S+$/i.test((t || '').trim());
+const icon = (f) => isVid(f) ? '🎬' : /\.pdf$/i.test(f.name) ? '📄' : /\.(zip|rar|7z)$/i.test(f.name) ? '🗜️' : '📁';
+
+function toast(t, onTap) { const el = $('#toast'); el.textContent = t; el.onclick = onTap || null; el.classList.add('show'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), onTap ? 5000 : 2600); }
+
+// ---------- island + wave ----------
+let isTimer;
+function island(name, stat, pct) {
+  const el = $('#island');
+  $('#isAv').textContent = (name || '?').trim()[0].toUpperCase();
+  $('#isName').textContent = name; $('#isStat').textContent = stat;
+  $('#isRing').style.display = pct == null ? 'none' : '';
+  if (pct != null) $('#isRing .bar').style.strokeDashoffset = 94.2 * (1 - pct);
+  el.classList.add('show'); clearTimeout(isTimer);
+  if (pct == null || pct >= 1) isTimer = setTimeout(() => el.classList.remove('show'), 2400);
+}
+function wave(dir) { const w = $('#wave'); w.className = ''; void w.offsetWidth; w.className = dir; }
+
+
+// ---------- finding devices ----------
+const BROKERS = ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt'];
+const T = 'flickapp/v1';
+let mq, room;
+async function sha(s) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('flick:' + s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join(''); }
+async function start() {
+  let ip = 'unknown';
+  try { ip = (await (await fetch('https://api.ipify.org?format=json')).json()).ip; } catch {}
+  room = (await sha(ip)).slice(0, 20);
+  connectBroker(0);
+}
+function connectBroker(i) {
+  mq = mqtt.connect(BROKERS[i % BROKERS.length], { clientId: 'fl_' + me.id + '_' + rid(2), clean: true, connectTimeout: 6000, reconnectPeriod: 3000 });
+  let ok = false;
+  mq.on('connect', () => { ok = true; mq.subscribe([`${T}/room/${room}`, `${T}/dev/${me.id}`]); hello(); });
+  mq.on('message', (_t, buf) => { try { onSignal(JSON.parse(buf.toString())); } catch {} });
+  setTimeout(() => { if (!ok) { mq.end(true); connectBroker(i + 1); } }, 7000);
+}
+const pub = (topic, msg) => mq?.connected && mq.publish(topic, JSON.stringify({ ...msg, from: me.id, name: me.name, kind: me.kind }));
+const toDev = (id, msg) => pub(`${T}/dev/${id}`, msg);
+function hello() { pub(`${T}/room/${room}`, { type: 'hello' }); for (const id in trusted) toDev(id, { type: 'hello' }); }
+setInterval(hello, 5000);
+
+function seen(m) {
+  if (m.from === me.id) return null;
+  let p = peers.get(m.from); if (!p) { p = { id: m.from }; peers.set(m.from, p); }
+  p.name = m.name; p.kind = m.kind; p.seen = Date.now();
+  if (trusted[p.id] && trusted[p.id] !== p.name) { trusted[p.id] = p.name; store.set('trusted', trusted); }
+  return p;
+}
+function acceptSheet(p, extra) {
+  showSheet(`<h3>${esc(p.name)} wants to pair</h3>${extra}
+    <div class="btns"><button class="btn" data-a="no">Decline</button><button class="btn pri" data-a="yes">Pair</button></div>`, (a) => {
+    if (a === 'yes') { trust(p); toDev(p.id, { type: 'pair-ok' }); paired(p); } else toDev(p.id, { type: 'pair-no' });
+  });
+}
+function paired(p) { island(p.name, 'Paired'); wave('down'); buzz([15, 40, 15]); link(p); }
+async function onSignal(m) {
+  const p = seen(m); if (!p) return;
+  if (m.type === 'hello') { renderDevices(); link(p); }
+  if (m.type === 'pair-req') acceptSheet(p, `<p>Check this code shows on ${esc(p.name)}</p><div class="code">${esc(m.code)}</div>`);
+  if (m.type === 'code-join' && pending?.code) { pending = null; acceptSheet(p, '<p>Entered your code</p>'); }
+  if (m.type === 'pair-ok' && pending && (pending.id === p.id || pending.joining)) { pending = null; trust(p); closeSheet(); paired(p); }
+  if (m.type === 'pair-no' && pending) { pending = null; closeSheet(); toast(p.name + ' declined'); }
+  if (m.type === 'sig' && trusted[p.id]) onRtc(p, m.data);
+}
+function trust(p) { trusted[p.id] = p.name; store.set('trusted', trusted); renderDevices(); }
+function forget(p) { delete trusted[p.id]; store.set('trusted', trusted); drop(p); renderDevices(); }
+
+// ---------- direct link (files never touch a server) ----------
+const ICE = { iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }] };
+function link(p) { if (trusted[p.id] && !p.pc && me.id < p.id) makePc(p, true); }
+function makePc(p, initiator) {
+  const pc = new RTCPeerConnection(ICE); p.pc = pc;
+  pc.onicecandidate = (e) => e.candidate && toDev(p.id, { type: 'sig', data: { c: e.candidate } });
+  pc.onconnectionstatechange = () => { if (['failed', 'closed', 'disconnected'].includes(pc.connectionState)) drop(p); };
+  if (initiator) {
+    setupDc(p, pc.createDataChannel('flick'));
+    pc.createOffer().then((o) => pc.setLocalDescription(o)).then(() => toDev(p.id, { type: 'sig', data: { sdp: pc.localDescription } }));
+  } else pc.ondatachannel = (e) => setupDc(p, e.channel);
+  setTimeout(() => { if (p.pc === pc && p.dc?.readyState !== 'open') drop(p); }, 15000);
+  return pc;
+}
+async function onRtc(p, d) {
+  if (d.sdp?.type === 'offer') {
+    if (p.pc) drop(p);
+    const pc = makePc(p, false);
+    await pc.setRemoteDescription(d.sdp);
+    await pc.setLocalDescription(await pc.createAnswer());
+    toDev(p.id, { type: 'sig', data: { sdp: pc.localDescription } });
+  } else if (d.sdp?.type === 'answer' && p.pc) await p.pc.setRemoteDescription(d.sdp).catch(() => {});
+  else if (d.c && p.pc) await p.pc.addIceCandidate(d.c).catch(() => {});
+}
+function drop(p) { try { p.dc?.close(); p.pc?.close(); } catch {} p.pc = p.dc = null; renderDevices(); }
+
+function setupDc(p, dc) {
+  dc.binaryType = 'arraybuffer'; p.dc = dc;
+  let batch = null, cur = null;
+  dc.onopen = () => { renderDevices(); island(p.name, 'Connected'); buzz(20); if (!isPhone) sendCaps(); };
+  dc.onclose = () => drop(p);
+  dc.onmessage = (e) => {
+    if (typeof e.data !== 'string') { if (cur) { cur.parts.push(e.data); cur.got += e.data.byteLength; batch.got += e.data.byteLength; if (batch.total) island(p.name, `Receiving · ${Math.round(100 * batch.got / batch.total)}%`, batch.got / batch.total); } return; }
+    const m = JSON.parse(e.data);
+    if (m.t === 'caps') { p.helper = m.helper; p.mirror = m.mirror; return; }
+    if (m.t === 'cmd') { helperSend(m); return; }
+    if (m.t === 'offer') { offerSheet(p, m); return; }
+    if (m.t === 'cancel') { if ($('#sheet').dataset.k === 'offer:' + m.id) { closeSheet(); toast(p.name + ' cancelled'); } return; }
+    if ((m.t === 'accept' || m.t === 'decline') && outgoing?.id === m.id) { outgoing.done(m); return; }
+    if (m.t === 'batch') { batch = { id: m.id, from: p.name, time: Date.now(), total: m.total, got: 0, items: [] }; wave('down'); island(p.name, 'Receiving', 0); }
+    if (m.t === 'file') cur = { ...m, parts: [], got: 0 };
+    if (m.t === 'end' && cur) { batch.items.push(new File(cur.parts, cur.name, { type: cur.mime || '' })); cur = null; }
+    if (m.t === 'text') batch.items.push({ text: m.text });
+    if (m.t === 'done' && batch) { received(batch); batch = null; }
+  };
+}
+const live = () => [...peers.values()].filter((p) => p.dc?.readyState === 'open');
+
+async function thumb(f) {
+  const draw = (el, w, h) => { const k = 240 / Math.max(w, h), c = document.createElement('canvas'); c.width = w * k; c.height = h * k; c.getContext('2d').drawImage(el, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', .6); };
+  try {
+    if (isImg(f)) { const i = new Image(); i.src = URL.createObjectURL(f); await i.decode(); return draw(i, i.naturalWidth, i.naturalHeight); }
+    if (isVid(f)) return await new Promise((ok) => {
+      const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = URL.createObjectURL(f) + '#t=0.1';
+      v.onloadeddata = () => setTimeout(() => { try { ok(draw(v, v.videoWidth, v.videoHeight)); } catch { ok(null); } }, 150);
+      v.onerror = () => ok(null); setTimeout(() => ok(null), 2500);
+    });
+  } catch {}
+  return null;
+}
+let outgoing = null; // offer waiting for an answer
+$('#island').onclick = () => { if (outgoing) { outgoing.cancel(); } };
+
+async function sendBatch(items) {
+  const to = live();
+  if (!to.length) { toast(Object.keys(trusted).length ? 'Open Flick on your other device' : 'Pair a device first'); return false; }
+  const p = to[0], dc = p.dc, id = rid(4);
+  const meta = await Promise.all(items.map(async (x) => isT(x) ? { text: x.text } : { name: x.name, size: x.size, type: x.type, thumb: await thumb(x) }));
+  wave('up'); buzz([10, 30, 10]);
+  dc.send(JSON.stringify({ t: 'offer', id, items: meta }));
+  island(p.name, 'Waiting · tap to cancel', null); clearTimeout(isTimer);
+  const ans = await new Promise((ok) => {
+    const t = setTimeout(() => ok({ t: 'timeout' }), 90000);
+    outgoing = { id, done: (m) => { clearTimeout(t); ok(m); }, cancel: () => { dc.send(JSON.stringify({ t: 'cancel', id })); clearTimeout(t); ok({ t: 'cancelled' }); } };
+  });
+  outgoing = null;
+  if (ans.t !== 'accept') { island(p.name, ans.t === 'decline' ? 'Declined' : ans.t === 'cancelled' ? 'Cancelled' : 'No answer', null); return true; }
+  const chosen = items.filter((_, i) => ans.pick.includes(i));
+  const total = chosen.reduce((s, x) => s + (x.size || 0), 0); let sent = 0;
+  dc.send(JSON.stringify({ t: 'batch', id, total }));
+  island(p.name, 'Sending', 0);
+  for (const x of chosen) {
+    if (isT(x)) { dc.send(JSON.stringify({ t: 'text', text: x.text })); continue; }
+    dc.send(JSON.stringify({ t: 'file', name: x.name, size: x.size, mime: x.type }));
+    const buf = await x.arrayBuffer(), CH = 64 * 1024;
+    dc.bufferedAmountLowThreshold = 1 << 20;
+    for (let o = 0; o < buf.byteLength; o += CH) {
+      if (dc.bufferedAmount > 8 << 20) await new Promise((r) => dc.addEventListener('bufferedamountlow', r, { once: true }));
+      dc.send(buf.slice(o, o + CH)); sent += Math.min(CH, buf.byteLength - o);
+      if (total) island(p.name, `Sending · ${Math.round(100 * sent / total)}%`, sent / total);
+    }
+    dc.send(JSON.stringify({ t: 'end' }));
+  }
+  dc.send(JSON.stringify({ t: 'done' }));
+  island(p.name, chosen.length < items.length ? `Sent ${chosen.length} of ${items.length}` : 'Sent', total ? 1 : null);
+  return true;
+}
+
+function offerSheet(p, m) {
+  const keep = m.items.map(() => true);
+  if (m.items.every(isT)) return p.dc.send(JSON.stringify({ t: 'accept', id: m.id, pick: m.items.map((_, i) => i) }));
+  buzz([10, 40, 10]);
+  const tiles = m.items.map((x, i) => `<div class="pk" data-a="k${i}">${isT(x) ? `<div style="font-size:26px">${isUrl(x.text) ? '🔗' : '💬'}</div>${esc(x.text.slice(0, 40))}`
+    : x.thumb ? `<img src="${x.thumb}">` : `<div style="font-size:26px">${icon(x)}</div>${esc(x.name)}`}<div class="ck">✓</div></div>`).join('');
+  showSheet(`<h3>${esc(p.name)}</h3><p>Wants to send ${esc(describe(m.items))}</p><div class="grid">${tiles}</div>
+    <div class="btns"><button class="btn" data-a="no">Decline</button><button class="btn pri" data-a="yes" id="accBtn">Accept</button></div>`, (a) => {
+    if (a[0] === 'k') { const i = +a.slice(1); keep[i] = !keep[i]; $(`[data-a="k${i}"]`).classList.toggle('off', !keep[i]); const n = keep.filter(Boolean).length; $('#accBtn').textContent = n === keep.length ? 'Accept' : n ? `Accept ${n}` : 'Accept'; return 'keep'; }
+    if (a === 'yes') { const pick = keep.map((k, i) => k ? i : -1).filter((i) => i >= 0); p.dc.send(JSON.stringify(pick.length ? { t: 'accept', id: m.id, pick } : { t: 'decline', id: m.id })); }
+    if (a === 'no') p.dc.send(JSON.stringify({ t: 'decline', id: m.id }));
+  }, 'offer:' + m.id);
+}
+
+// ---------- devices (no chips, one quiet sheet) ----------
+function renderDevices() { renderTitle(); if ($('#modal').classList.contains('show') && $('#sheet').dataset.k === 'dev') devSheet(); }
+setInterval(renderDevices, 4000);
+function devSheet() {
+  const now = Date.now(), near = [...peers.values()].filter((p) => now - p.seen < 15000);
+  const mine = Object.entries(trusted), others = near.filter((p) => !trusted[p.id]);
+  const row = (id, name, sub, act) => `<div class="r" data-a="${id}"><div class="th">${esc(name[0] || '?').toUpperCase()}</div><div class="nm">${esc(name)}<div class="sub">${sub}</div></div><div class="act">${act}</div></div>`;
+  showSheet(`<h3>Devices</h3><p>This device · <u data-a="rename">${esc(me.name)}</u></p>
+    ${mine.length ? '<div class="lbl">Paired</div><div class="rows">' + mine.map(([id, n]) => { const p = peers.get(id); return row('f' + id, n, p?.dc?.readyState === 'open' ? 'Ready' : 'Not open', 'Forget'); }).join('') + '</div>' : ''}
+    <div class="lbl">Nearby</div><div class="rows">${others.length ? others.map((p) => row('p' + p.id, p.name, 'Same Wi-Fi', 'Pair')).join('') : '<div class="sub" style="padding:8px 4px">Open Flick on your other device</div>'}</div>
+    <div class="btns"><button class="btn" data-a="code">Use a code</button><button class="btn" data-a="close">Done</button></div>`, (a) => {
+    if (a === 'rename') { const n = prompt('Device name', me.name); if (n && n.trim()) { me.name = n.trim().slice(0, 24); store.set('me', me); hello(); } devSheet(); return 'keep'; }
+    if (a === 'code') { codeSheet(); return 'keep'; }
+    if (a[0] === 'f') { const id = a.slice(1); if (confirm(`Forget ${trusted[id]}?`)) { const p = peers.get(id) || { id }; forget(p); } devSheet(); return 'keep'; }
+    if (a[0] === 'p') { const p = peers.get(a.slice(1)); if (p) askPair(p); return 'keep'; }
+  }, 'dev');
+}
+$('#devBtn').onclick = devSheet;
+
+function askPair(p) {
+  const code = String(Math.floor(1000 + Math.random() * 9000));
+  pending = { id: p.id };
+  toDev(p.id, { type: 'pair-req', code });
+  showSheet(`<h3>Pairing with ${esc(p.name)}</h3><p>Accept this code on ${esc(p.name)}</p><div class="code">${code}</div>
+    <div class="btns"><button class="btn" data-a="cancel">Cancel</button></div>`, () => (pending = null));
+}
+function codeSheet() {
+  const code = String(Math.floor(1000 + Math.random() * 9000));
+  pending = { code }; mq?.subscribe(`${T}/code/${code}`);
+  showSheet(`<h3>Pair with a code</h3><p>Enter this on your other device</p><div class="code">${code}</div>
+    <p class="or">Or enter theirs</p><input id="codeIn" inputmode="numeric" maxlength="4" placeholder="····" />
+    <div class="btns"><button class="btn" data-a="cancel">Cancel</button><button class="btn pri" data-a="join">Connect</button></div>`, (a) => {
+    mq?.unsubscribe(`${T}/code/${code}`);
+    if (a === 'join') {
+      const v = ($('#codeIn').value || '').trim();
+      if (!/^\d{4}$/.test(v)) { toast('Enter 4 digits'); return 'keep'; }
+      pending = { joining: true }; pub(`${T}/code/${v}`, { type: 'code-join' });
+      showSheet(`<h3>Waiting</h3><p>Accept on your other device</p><div class="btns"><button class="btn" data-a="cancel">Cancel</button></div>`, () => (pending = null));
+      return 'keep';
+    }
+    pending = null;
+  });
+}
+function showSheet(html, onAction, kind) {
+  $('#sheet').dataset.k = kind || ''; $('#sheet').innerHTML = html; $('#modal').classList.add('show');
+  $('#sheet').onclick = (e) => { const a = e.target.closest('[data-a]')?.dataset.a; if (!a) return; if (onAction?.(a) !== 'keep') closeSheet(); };
+}
+function closeSheet() { $('#modal').classList.remove('show'); }
+$('#modal').onclick = (e) => { if (e.target.id === 'modal' && !pending) closeSheet(); };
+
+// ---------- history (kept on this device) ----------
+const DB = new Promise((ok) => { const r = indexedDB.open('flick', 1); r.onupgradeneeded = () => r.result.createObjectStore('b', { keyPath: 'id' }); r.onsuccess = () => ok(r.result); r.onerror = () => ok(null); });
+async function dbAll() { const d = await DB; if (!d) return []; return new Promise((ok) => { const q = d.transaction('b').objectStore('b').getAll(); q.onsuccess = () => ok(q.result); q.onerror = () => ok([]); }); }
+async function dbPut(b) { const d = await DB; d && d.transaction('b', 'readwrite').objectStore('b').put(b); }
+async function dbClear() { const d = await DB; d && d.transaction('b', 'readwrite').objectStore('b').clear(); }
+
+function describe(items) {
+  const files = items.filter((x) => !isT(x)), texts = items.filter((x) => isT(x));
+  if (!files.length) return isUrl(texts[0]?.text) ? 'Link' : 'Text';
+  const imgs = files.filter(isImg).length, vids = files.filter(isVid).length;
+  if (imgs === files.length) return imgs === 1 ? 'Photo' : `${imgs} photos`;
+  if (vids === files.length) return vids === 1 ? 'Video' : `${vids} videos`;
+  return files.length === 1 ? files[0].name : `${files.length} files`;
+}
+function when(t) { const d = new Date(t), now = new Date(); return d.toDateString() === now.toDateString() ? d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : d.toLocaleDateString([], { day: 'numeric', month: 'short' }); }
+function folderEl(b, fresh) {
+  const el = document.createElement('div'); el.className = 'fold' + (fresh ? ' in' : '');
+  const papers = b.items.slice(0, 3).map((x) => {
+    if (isT(x)) return `<div class="paper"><div class="big">${isUrl(x.text) ? '🔗' : '💬'}</div></div>`;
+    if (isImg(x)) return `<div class="paper"><img src="${URL.createObjectURL(x)}"></div>`;
+    return `<div class="paper"><div class="ln"></div><div class="ln"></div><div class="ln s"></div></div>`;
+  }).reverse().join('');
+  el.innerHTML = `<div class="fv"><div class="back"></div>${papers}<div class="front"></div></div><div class="lb">${esc(describe(b.items))}</div><div class="sb">${esc(b.from)} · ${when(b.time)}</div>`;
+  el.onclick = () => openFolder(b);
+  return el;
+}
+function addFolder(b, fresh) { $('#folders .empty')?.remove(); $('#clear').classList.remove('hidden'); $('#folders').prepend(folderEl(b, fresh)); }
+async function received(b) {
+  delete b.got; delete b.total;
+  addFolder(b, true); dbPut(b); buzz([10, 40, 10]);
+  island(b.from, 'Received · ' + describe(b.items), 1);
+  const t = b.items.find((x) => isT(x));
+  if (!isPhone) {
+    for (const f of b.items) if (!isT(f)) download(f);
+    if (t && isUrl(t.text)) toast('Link from ' + b.from + ' · Open', () => window.open(t.text.trim(), '_blank'));
+    else if (t) navigator.clipboard.writeText(t.text).then(() => toast('Copied from ' + b.from), () => {});
+  } else if (t) toast(b.from + ' sent ' + (isUrl(t.text) ? 'a link' : 'text') + ' · Tap to copy', () => copy(t.text));
+}
+function download(f) { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); }
+async function copy(t) { try { await navigator.clipboard.writeText(t); toast('Copied'); } catch { toast('Couldn’t copy'); } }
+async function saveFiles(files) {
+  if (isPhone && navigator.canShare?.({ files })) { try { await navigator.share({ files }); } catch {} }
+  else files.forEach(download);
+}
+function openFolder(b) {
+  const files = b.items.filter((x) => !isT(x));
+  const rows = b.items.map((x, i) => isT(x)
+    ? `<div class="r" data-a="t${i}"><div class="th">${isUrl(x.text) ? '🔗' : '💬'}</div><div class="nm wrap">${esc(x.text)}</div><div class="act">${isUrl(x.text) ? 'Open' : 'Copy'}</div></div>`
+    : `<div class="r" data-a="f${i}">${isImg(x) ? `<img class="th" src="${URL.createObjectURL(x)}">` : `<div class="th">${icon(x)}</div>`}<div class="nm">${esc(x.name)}</div><div class="act">Save</div></div>`).join('');
+  showSheet(`<h3>${esc(describe(b.items))}</h3><p>${esc(b.from)} · ${when(b.time)}</p><div class="rows">${rows}</div>
+    <div class="btns">${files.length > 1 ? '<button class="btn pri" data-a="all">Save all</button>' : ''}<button class="btn" data-a="close">Close</button></div>`, (a) => {
+    if (a === 'all') { saveFiles(files); return 'keep'; }
+    if (a[0] === 't') { const t = b.items[+a.slice(1)].text; isUrl(t) ? window.open(t.trim(), '_blank') : copy(t); return 'keep'; }
+    if (a[0] === 'f') { saveFiles([b.items[+a.slice(1)]]); return 'keep'; }
+  });
+}
+$('#clear').onclick = () => { if (!confirm('Clear everything you received?')) return; dbClear(); $('#folders').innerHTML = '<div class="empty">Nothing yet</div>'; $('#clear').classList.add('hidden'); };
+dbAll().then((all) => all.sort((a, b) => a.time - b.time).forEach((b) => addFolder(b)));
+
+// ---------- title ----------
+function renderTitle() {
+  const on = live()[0];
+  const to = on ? `<br><span>to ${esc(on.name)}</span>` : Object.keys(trusted).length ? '<br><span>Open Flick on your other device</span>' : '<br><span>Tap Devices to pair</span>';
+  $('#title').innerHTML = (isPhone ? (picked.length ? `${picked.length} ready.` : 'Flick to send.') : 'Throw to send.') + to;
+}
+
+// ---------- phone: pick, flick ----------
+let picked = [];
+const tray = $('#tray'), hint = $('#hint');
+function renderTray() {
+  tray.innerHTML = '';
+  tray.classList.toggle('hidden', !picked.length); hint.classList.toggle('hidden', !!picked.length);
+  $('#stage').classList.toggle('ready', !!picked.length);
+  picked.forEach((f, i) => {
+    const t = document.createElement('div'); t.className = 'tile glass';
+    const u = f._u || (f._u = URL.createObjectURL(f));
+    t.innerHTML = (isImg(f) ? `<img src="${u}">` : isVid(f) ? `<video src="${u}#t=0.1" muted playsinline preload="metadata"></video><div class="vb">▶ Video</div>` : `<div style="font-size:30px">${icon(f)}</div>${esc(f.name)}`) + '<div class="x">×</div>';
+    t.onclick = (e) => { e.stopPropagation(); if (e.target.classList.contains('x')) { picked.splice(i, 1); renderTray(); buzz(10); } else previewSheet(i); };
+    tray.append(t);
+  });
+  renderTitle();
+}
+function previewSheet(i) {
+  const f = picked[i]; if (!f) return; const u = f._u;
+  showSheet(`<h3>${esc(f.name)}</h3><p>${(f.size / 1048576).toFixed(1)} MB</p>${isImg(f) ? `<img class="big" src="${u}">` : isVid(f) ? `<video class="big" src="${u}" controls playsinline></video>` : `<div style="font-size:60px;text-align:center;margin:30px">${icon(f)}</div>`}
+    <div class="btns"><button class="btn" data-a="rm">Remove</button><button class="btn pri" data-a="close">Keep</button></div>`, (a) => { if (a === 'rm') { picked.splice(i, 1); renderTray(); } });
+}
+async function flick() {
+  if (!picked.length) return toast('Add something first');
+  if (!live().length) return toast(Object.keys(trusted).length ? 'Open Flick on your other device' : 'Pair a device first');
+  const files = picked; picked = [];
+  if (outgoing) return toast('Wait for the last send');
+  tray.querySelectorAll('.tile').forEach((t, i) => { t.style.animationDelay = i * 50 + 'ms'; t.classList.add('out'); });
+  setTimeout(renderTray, 650 + files.length * 50);
+  if (!(await sendBatch(files))) { picked = files; renderTray(); }
+}
+async function toPdf(images) {
+  const { jsPDF } = window.jspdf; let doc;
+  for (const f of images) {
+    const img = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = URL.createObjectURL(f); });
+    const s = Math.min(1, 2000 / Math.max(img.width, img.height)), w = img.width * s, h = img.height * s;
+    const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(img, 0, 0, w, h);
+    const o = w > h ? 'l' : 'p';
+    if (!doc) doc = new jsPDF({ orientation: o, unit: 'px', format: [w, h] }); else doc.addPage([w, h], o);
+    doc.addImage(c.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, w, h);
+  }
+  const d = new Date();
+  return new File([doc.output('blob')], `Scan ${d.toISOString().slice(0, 10)} ${d.getHours()}-${String(d.getMinutes()).padStart(2, '0')}.pdf`, { type: 'application/pdf' });
+}
+
+if (isPhone) {
+  hint.innerHTML = '<div class="ring"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></div><b>Add photos or files</b><small>Then flick your phone</small>';
+  $('#pick').onclick = () => $('#file').click();
+  $('#file').onchange = (e) => { picked.push(...e.target.files); e.target.value = ''; renderTray(); };
+  $('#cam').onclick = () => $('#camIn').click();
+  $('#camIn').onchange = async (e) => { const f = e.target.files[0]; e.target.value = ''; if (f && !(await sendBatch([f]))) { picked.push(f); renderTray(); } };
+  $('#scan').onclick = () => $('#scanIn').click();
+  $('#scanIn').onchange = async (e) => {
+    const imgs = [...e.target.files]; e.target.value = ''; if (!imgs.length) return;
+    if (!window.jspdf) return toast('Scanner still loading. Try again.');
+    toast('Making PDF'); try { picked.push(await toPdf(imgs)); renderTray(); toast('PDF ready · flick to send'); } catch { toast('Couldn’t make PDF'); }
+  };
+  $('#sendText').onclick = async () => { try { const t = await navigator.clipboard.readText(); t ? sendBatch([{ text: t }]) : toast('Nothing copied'); } catch { toast('Allow paste to send'); } };
+  $('#stage').onclick = () => picked.length ? flick() : $('#file').click();
+
+  let last = 0;
+  const onMotion = (e) => {
+    const a = e.acceleration; if (!a || a.x == null) return;
+    if (Math.hypot(a.x, a.y, a.z) > 12 && Date.now() - last > 1500) { last = Date.now(); picked.length && flick(); }
+  };
+  $('#motionRow').onclick = async () => {
+    try { if ((await DeviceMotionEvent.requestPermission()) !== 'granted') return toast('Motion is off'); addEventListener('devicemotion', onMotion); $('#motionRow').classList.add('hidden'); toast('Flick is on'); }
+    catch { toast('Motion is off'); }
+  };
+  if (typeof DeviceMotionEvent?.requestPermission === 'function') $('#motionRow').classList.remove('hidden');
+  else addEventListener('devicemotion', onMotion);
+  renderTray();
+}
+
+// ---------- laptop: drop, throw up ----------
+if (!isPhone) {
+  const stage = $('#stage');
+  hint.innerHTML = '<div class="ring"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></div><b>Drop files here</b><small>Throw them up to send · Double-click to remove</small>';
+  stage.addEventListener('dragover', (e) => { e.preventDefault(); stage.classList.add('over'); });
+  stage.addEventListener('dragleave', () => stage.classList.remove('over'));
+  stage.addEventListener('drop', (e) => {
+    e.preventDefault(); stage.classList.remove('over');
+    const r = stage.getBoundingClientRect();
+    [...e.dataTransfer.files].forEach((f, i) => chip(f, e.clientX - r.left - 46 + i * 16, e.clientY - r.top - 60 + i * 16));
+  });
+  addEventListener('paste', (e) => {
+    const files = [...(e.clipboardData?.files || [])];
+    if (files.length) files.forEach((f, i) => chip(f, 40 + i * 20, 40 + i * 20));
+    else { const t = e.clipboardData?.getData('text'); if (t) sendBatch([{ text: t }]); }
+  });
+  function chip(file, x, y) {
+    hint.classList.add('hidden'); stage.classList.add('ready');
+    const c = document.createElement('div'); c.className = 'tile glass chip';
+    const u = URL.createObjectURL(file);
+    c.innerHTML = isImg(file) ? `<img src="${u}">` : isVid(file) ? `<video src="${u}#t=0.1" muted preload="metadata"></video><div class="vb">▶ Video</div>` : `<div style="font-size:30px">${icon(file)}</div>${esc(file.name)}`;
+    c.ondblclick = () => { c.remove(); if (!stage.querySelector('.chip')) { hint.classList.remove('hidden'); stage.classList.remove('ready'); } };
+    stage.append(c);
+    let px = Math.max(0, Math.min(x, stage.clientWidth - 94)), py = Math.max(0, Math.min(y, stage.clientHeight - 120));
+    const place = () => (c.style.transform = `translate(${px}px,${py}px)`); place();
+    let s, trail = [];
+    c.onpointerdown = (e) => { c.setPointerCapture(e.pointerId); s = { x: e.clientX - px, y: e.clientY - py }; trail = [{ y: e.clientY, t: e.timeStamp }]; };
+    c.onpointermove = (e) => { if (!s) return; px = e.clientX - s.x; py = e.clientY - s.y; place(); trail.push({ y: e.clientY, t: e.timeStamp }); if (trail.length > 6) trail.shift(); };
+    c.onpointerup = () => {
+      if (!s) return; s = null;
+      const a = trail[0], b = trail[trail.length - 1];
+      if ((b.y - a.y) / Math.max(1, b.t - a.t) > -0.7 && py > -30) return;
+      if (!live().length) return toast(Object.keys(trusted).length ? 'Open Flick on your iPhone' : 'Pair a device first');
+      c.style.setProperty('--at', `translate(${px}px,${py}px)`); c.classList.add('out');
+      setTimeout(() => { c.remove(); if (!stage.querySelector('.chip')) { hint.classList.remove('hidden'); stage.classList.remove('ready'); } }, 650);
+      sendBatch([file]);
+    };
+  }
+}
+
+// ---------- Flick Helper (laptop) ----------
+let helper = null, helperInfo = null;
+function helperConnect() {
+  if (isPhone) return;
+  try { helper = new WebSocket('ws://127.0.0.1:4041'); } catch { return setTimeout(helperConnect, 8000); }
+  helper.onmessage = (e) => { helperInfo = JSON.parse(e.data); sendCaps(); };
+  helper.onclose = () => { helper = null; helperInfo = null; sendCaps(); setTimeout(helperConnect, 8000); };
+}
+function sendCaps() { live().forEach((p) => p.dc.send(JSON.stringify({ t: 'caps', helper: !!helperInfo, mirror: helperInfo?.mirror, name: helperInfo?.name }))); }
+function helperSend(m) { if (helper?.readyState === 1) helper.send(JSON.stringify(m)); }
+helperConnect();
+
+// ---------- phone: control the laptop ----------
+const KEYS = [['prev', '⏮', 'Back'], ['play', '⏯', 'Play'], ['next', '⏭', 'Next'], ['voldown', '🔉', 'Vol −'], ['mute', '🔇', 'Mute'], ['volup', '🔊', 'Vol +'],
+  ['slideshow', '▶️', 'Slideshow'], ['endshow', '⏹', 'End show'], ['desktop', '🖥', 'Desktop'], ['open:chrome', '🌐', 'Chrome'], ['open:explorer', '📂', 'Files'], ['lock', '🔒', 'Lock']];
+function remoteSheet() {
+  const p = live()[0];
+  if (!p) return toast(Object.keys(trusted).length ? 'Open Flick on your laptop' : 'Pair a device first');
+  if (!p.helper) return showSheet(`<h3>${esc(p.name)}</h3><p>Install Flick Helper on the laptop to mirror your screen and use shortcuts</p><div class="btns"><button class="btn" data-a="close">OK</button></div>`);
+  showSheet(`<h3>${esc(p.name)}</h3>
+    <div class="lbl">Mirror this iPhone</div>
+    <div class="steps">1. Swipe down from the top-right corner<br>2. Tap <b>Screen Mirroring</b> → <b>Flick</b><br>3. Type the code shown on the laptop</div>
+    <div class="lbl">Shortcuts</div>
+    <div class="keys">${KEYS.map(([a, i, l]) => `<button class="key" data-a="${a}"><i>${i}</i>${l}</button>`).join('')}</div>
+    <div class="btns"><button class="btn" data-a="close">Done</button></div>`, (a) => {
+    if (a === 'close') return;
+    const [act, arg] = a.split(':'); p.dc.send(JSON.stringify({ t: 'cmd', a: act, arg })); buzz(10); return 'keep';
+  });
+}
+if (isPhone) $('#remote').onclick = remoteSheet;
+
+renderDevices();
+start();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
