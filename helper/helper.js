@@ -4,7 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { spawn, exec } from 'node:child_process';
+import { spawn, exec, execSync } from 'node:child_process';
 import { WebSocketServer } from 'ws';
 
 const NAME = process.env.FLICK_NAME || 'Flick';
@@ -20,7 +20,11 @@ function findUxplay() {
   return null;
 }
 let mirror = null, mirrorState = 'off';
+function guiRunning() {
+  try { return /uxplay-windows\.exe/i.test(execSync('tasklist /FI "IMAGENAME eq uxplay-windows.exe" /NH', { encoding: 'utf8' })); } catch { return false; }
+}
 function startMirror() {
+  if (guiRunning()) { mirrorState = 'on'; console.log('  Screen mirroring: handled by the UxPlay app'); return; }
   const exe = findUxplay();
   if (!exe) { mirrorState = 'missing'; console.log('  Screen mirroring: UxPlay not found. See README step 2.'); return; }
   const bin = path.dirname(exe);
