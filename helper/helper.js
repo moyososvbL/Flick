@@ -78,7 +78,7 @@ let model = conf.model || 'Windows PC';
 ps(`$c = Get-CimInstance Win32_ComputerSystem; $p = Get-CimInstance Win32_ComputerSystemProduct
 if ($c.Manufacturer -match 'LENOVO') { "$($c.Manufacturer)|$($p.Version)" } else { "$($c.Manufacturer)|$($c.Model)" }`).then((r) => {
   const [m, n] = r.split('|').map((x) => (x || '').trim());
-  const brand = (m || '').replace(/\b(inc\.?|corporation|corp\.?|co\.?,? ?ltd\.?|technologies?|computer|international)\b/gi, '').replace(/hewlett-packard/i, 'HP').trim();
+  const brand = (m || '').replace(/hewlett-packard/i, 'HP').replace(/\b(inc|corporation|corp|co|ltd|technologies|technology|computer|international)\b/gi, '').replace(/[.,]/g, '').replace(/\s+/g, ' ').trim();
   if (n && !/system product name|to be filled/i.test(n)) { model = n.toLowerCase().startsWith(brand.toLowerCase()) ? n : `${brand} ${n}`.trim(); conf.model = model; save(); }
 });
 
