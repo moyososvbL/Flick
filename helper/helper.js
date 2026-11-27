@@ -233,16 +233,24 @@ async function onMessage(m) {
 const ALLOWED = /^(https:\/\/[a-z0-9-]+\.netlify\.app|http:\/\/localhost(:\d+)?)$/i;
 const locals = new Set();
 const local = (m) => { const s = JSON.stringify(m); locals.forEach((w) => w.readyState === 1 && w.send(s)); };
-const wss = new WebSocketServer({ host: '127.0.0.1', port: LOCAL_PORT, verifyClient: ({ origin }) => ALLOWED.test(origin || '') });
-wss.on('error', (e) => { if (e.code === 'EADDRINUSE') { log('Flick is already running'); process.exit(0); } });
-wss.on('listening', () => { startInput(); connect(); log('Flick started'); });
-wss.on('connection', (ws) => {
-  locals.add(ws);
-  ws.send(JSON.stringify({ t: 'hi', id: conf.id, name: conf.name, model, trusted: Object.fromEntries(Object.entries(conf.trusted).map(([k, v]) => [k, { name: v.name, avatar: v.avatar }])) }));
-  ws.on('message', (raw) => { let m; try { m = JSON.parse(raw); } catch { return; }
-    if (m.t === 'rename' && m.name) { conf.name = String(m.name).slice(0, 24); save(); hello(); }
-    if (m.t === 'forget' && conf.trusted[m.id]) { delete conf.trusted[m.id]; save(); }
+let started = false;
+function startLocal() {
+  const wss = new WebSocketServer({ host: '127.0.0.1', port: LOCAL_PORT, verifyClient: ({ origin }) => ALLOWED.test(origin || '') });
+  wss.on('error', (e) => {
+    if (e.code !== 'EADDRINUSE') return log('error', e.message);
+    if (!process.versions.electron) { log('Flick is already running'); process.exit(0); }
+    try { wss.close(); } catch {} setTimeout(startLocal, 3000); // an older Flick is closing; try again
   });
-  ws.on('close', () => locals.delete(ws));
-});
+  wss.on('listening', () => { if (!started) { started = true; startInput(); connect(); log('Flick started'); } });
+  wss.on('connection', (ws) => {
+    locals.add(ws);
+    ws.send(JSON.stringify({ t: 'hi', id: conf.id, name: conf.name, model, trusted: Object.fromEntries(Object.entries(conf.trusted).map(([k, v]) => [k, { name: v.name, avatar: v.avatar }])) }));
+    ws.on('message', (raw) => { let m; try { m = JSON.parse(raw); } catch { return; }
+      if (m.t === 'rename' && m.name) { conf.name = String(m.name).slice(0, 24); save(); hello(); }
+      if (m.t === 'forget' && conf.trusted[m.id]) { delete conf.trusted[m.id]; save(); }
+    });
+    ws.on('close', () => locals.delete(ws));
+  });
+}
+startLocal();
 process.on('uncaughtException', (e) => log('error', e.message));
