@@ -880,8 +880,11 @@ async function remoteSheet() {
   const p = [...peers.values()].find(remoteOk);
   if (!p) {
     const any = Object.keys(keys).length;
-    return showSheet(`<h3>Control your laptop</h3><p>${any ? 'Your laptop is off or offline' : 'Install Flick for Windows on your laptop, then pair it in Devices'}</p>
-      <div class="btns">${any ? '' : '<button class="btn pri" data-a="get">Get Flick for Windows</button>'}<button class="btn" data-a="close">OK</button></div>`, (a) => { if (a === 'get') window.open('https://github.com/moyososvbL/Flick/releases/tag/windows', '_blank'); });
+    const near = [...peers.values()].find((x) => Date.now() - (x.helperSeen || 0) < 20000 && !keys[x.id]);
+    if (near) return showSheet(`<h3>Pair ${esc(near.name)}</h3><p>${esc(near.model || 'Your laptop')} is ready. Pair it once to control it.</p>
+      <div class="btns"><button class="btn" data-a="close">Not now</button><button class="btn pri" data-a="pair">Pair</button></div>`, (a) => { if (a === 'pair') { askPair(near); return 'keep'; } });
+    return showSheet(`<h3>Control your laptop</h3><p>${any ? 'Your laptop is off, asleep or offline' : 'Open Flick for Windows on your laptop and keep both on the same Wi-Fi'}</p>
+      <div class="btns">${any ? '' : '<button class="btn" data-a="get">Get Flick for Windows</button>'}<button class="btn pri" data-a="close">OK</button></div>`, (a) => { if (a === 'get') window.open('https://github.com/moyososvbL/Flick/releases/tag/windows', '_blank'); });
   }
   if (!(await verifyOwner())) return;
   const run = (a, arg) => { cmd(p.id, a, arg); buzz(8); };
