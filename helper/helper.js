@@ -103,10 +103,18 @@ function open(keyB64, { iv, ct }) {
 const seen = new Map(); // nonce -> time (replay guard)
 
 // ---------- input (one hidden PowerShell that moves the mouse and presses keys) ----------
+// The script runs from a .ps1 file. Piping it in with "-Command -" never runs it: PowerShell waits
+// for a blank line after the multi-line loop, so every mouse, key, media and typing command was lost.
 let input;
+const INPUT_PS1 = path.join(DIR, 'input.ps1');
 function startInput() {
-  input = spawn('powershell.exe', [...PS, '-Command', '-'], { windowsHide: true, stdio: ['pipe', 'ignore', 'ignore'] });
-  input.stdin.write(`Add-Type @"
+  fs.writeFileSync(INPUT_PS1, INPUT_SCRIPT);
+  input = spawn('powershell.exe', [...PS, '-File', INPUT_PS1], { windowsHide: true, stdio: ['pipe', 'ignore', 'pipe'] });
+  input.stderr.on('data', (d) => log('input error', String(d).trim()));
+  input.on('error', (e) => log('input failed', e.message));
+  input.on('exit', () => setTimeout(startInput, 1000));
+}
+const INPUT_SCRIPT = `Add-Type @"
 using System; using System.Runtime.InteropServices;
 public class W { [DllImport("user32.dll")] public static extern void mouse_event(int f,int x,int y,int d,int e);
 [DllImport("user32.dll")] public static extern void keybd_event(byte v,byte s,int f,int e); }
@@ -118,13 +126,11 @@ while ($true) { $l = [Console]::In.ReadLine(); if ($l -eq $null) { break }; $a =
   'c' { [W]::mouse_event(2,0,0,0,0); [W]::mouse_event(4,0,0,0,0) }
   'r' { [W]::mouse_event(8,0,0,0,0); [W]::mouse_event(16,0,0,0,0) }
   's' { [W]::mouse_event(0x800,0,0,[int]$a[1],0) }
-  'v' { $k=[byte][int]$a[1]; [W]::keybd_event($k,0,0,0); [W]::keybd_event($k,0,2,0) }
+  'v' { $k=[byte][int]$a[1]; $x = if ($k -ge 0xAD -and $k -le 0xB3) { 1 } else { 0 }; [W]::keybd_event($k,0,$x,0); [W]::keybd_event($k,0,($x -bor 2),0) }
   'w' { $k=[byte][int]$a[1]; [W]::keybd_event(0x5B,0,0,0); [W]::keybd_event($k,0,0,0); [W]::keybd_event($k,0,2,0); [W]::keybd_event(0x5B,0,2,0) }
   't' { [System.Windows.Forms.SendKeys]::SendWait([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($a[1]))) }
  } }
-`);
-  input.on('exit', () => setTimeout(startInput, 1000));
-}
+`;
 const send = (line) => { try { input.stdin.write(line + '\n'); } catch {} };
 const sendKeysText = (t) => String(t).replace(/[+^%~(){}[\]]/g, '{$&}').replace(/\r?\n/g, '{ENTER}');
 
