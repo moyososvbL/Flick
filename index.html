@@ -75,6 +75,42 @@
   .key i { font-style:normal; font-size:20px; }
   .key:active { background:rgba(75,141,255,.3); }
   .steps { text-align:left; margin-top:12px; padding:14px 16px; border-radius:16px; background:rgba(47,123,255,.1); border:1px solid rgba(75,141,255,.25); font-size:14px; line-height:1.7; }
+  /* icons */
+  .ic { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+  /* connection badge */
+  .link { display:flex; align-items:center; gap:10px; margin:-4px 0 16px; padding:8px 14px 8px 8px; border-radius:99px; width:max-content; max-width:100%; cursor:pointer; }
+  .av { width:30px; height:30px; border-radius:50%; flex:none; background:linear-gradient(135deg,#6aa8ff,#2f5bff) center/cover; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; color:#fff; box-shadow:0 0 0 2px rgba(255,255,255,.12); }
+  .wire { width:46px; height:2px; flex:none; border-radius:2px; background:linear-gradient(90deg,transparent,#6aa8ff,transparent); background-size:200% 100%; animation:flow 2.2s linear infinite; box-shadow:0 0 10px rgba(80,150,255,.8); }
+  .wire.off { background:repeating-linear-gradient(90deg,rgba(255,255,255,.25) 0 4px,transparent 4px 8px); animation:none; box-shadow:none; }
+  @keyframes flow { from { background-position:100% 0; } to { background-position:-100% 0; } }
+  .dv { width:30px; height:30px; border-radius:9px; flex:none; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.06); color:#bcd4ff; box-shadow:inset 0 1px 0 rgba(255,255,255,.15); }
+  .dv .ic { width:18px; height:18px; }
+  .link b { font-size:13px; font-weight:600; display:block; line-height:1.2; }
+  .link small { font-size:11px; color:var(--dim); }
+  /* remote */
+  .hero { display:flex; align-items:center; gap:14px; padding:16px; border-radius:22px; margin-top:16px; background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.1); box-shadow:inset 0 1px 0 rgba(255,255,255,.2); }
+  .hero .dv { width:48px; height:48px; border-radius:14px; color:#cfe0ff; box-shadow:inset 0 1px 0 rgba(255,255,255,.2), 0 0 24px rgba(80,150,255,.35); }
+  .hero .dv .ic { width:26px; height:26px; }
+  .hero .tx { flex:1; min-width:0; text-align:left; } .hero b { display:block; font-size:16px; } .hero small { color:var(--dim); font-size:12px; }
+  .bat { position:relative; width:54px; height:54px; flex:none; }
+  .bat svg { width:54px; height:54px; transform:rotate(-90deg); }
+  .bat span { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:11px; font-weight:600; line-height:1; gap:1px; }
+  .shot { margin-top:10px; border-radius:18px; overflow:hidden; aspect-ratio:16/9; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); display:flex; align-items:center; justify-content:center; gap:8px; color:var(--dim); font-size:13px; cursor:pointer; position:relative; }
+  .shot img { width:100%; height:100%; object-fit:cover; }
+  .tiles { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:10px; }
+  .tl { aspect-ratio:1; border-radius:18px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; font-size:11px; color:var(--dim);
+        background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025)); border:1px solid rgba(255,255,255,.08); box-shadow:inset 0 1px 0 rgba(255,255,255,.14); transition:transform .15s, background .2s; }
+  .tl .ic { color:#e8eefc; filter:drop-shadow(0 0 6px rgba(120,170,255,.45)); }
+  .tl:active { transform:scale(.94); background:rgba(75,141,255,.25); }
+  .tl.warn .ic { color:#ff9b9b; filter:drop-shadow(0 0 6px rgba(255,90,90,.5)); }
+  .pad { margin-top:16px; height:46vh; border-radius:24px; touch-action:none; display:flex; align-items:flex-end; justify-content:center; padding:14px; color:var(--faint); font-size:12px;
+         background:radial-gradient(120% 80% at 50% 120%, rgba(47,123,255,.25), transparent 60%), rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); box-shadow:inset 0 1px 0 rgba(255,255,255,.15); }
+  .kb { display:flex; gap:8px; margin-top:10px; }
+  .kb input { flex:1; margin:0; font:500 15px inherit; font-family:inherit; letter-spacing:0; text-align:left; padding:13px 14px; }
+  .me-row { display:flex; align-items:center; gap:14px; margin-top:16px; padding:14px; border-radius:20px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); text-align:left; }
+  .me-row .av { width:56px; height:56px; font-size:22px; cursor:pointer; }
+  .me-row b { display:block; font-size:16px; } .me-row small { color:var(--dim); font-size:13px; }
+  .ring-btn { display:flex; align-items:center; gap:6px; }
   .big { width:100%; max-height:55vh; object-fit:contain; border-radius:18px; margin-top:16px; background:#000; }
 
   main { flex:1; display:flex; flex-direction:column; min-height:0; gap:18px; }
@@ -183,12 +219,13 @@
 <div class="app">
   <header>
     <div class="logo"><img src="icon.svg" alt="" />Flick</div>
-    <button class="me glass" id="devBtn">Devices</button>
+    <div style="display:flex;gap:8px"><button class="me glass ring-btn hidden" id="ringBtn"></button><button class="me glass" id="devBtn">Devices</button></div>
   </header>
 
   <main>
     <div class="col">
       <div class="title" id="title"></div>
+      <div class="link glass" id="link"></div>
       <div class="stage" id="stage">
         <div class="hint" id="hint"></div>
         <div class="tray hidden" id="tray"></div>
@@ -202,6 +239,7 @@
       </div>
       <button class="glass phone-only hidden" id="motionRow">Turn on flick</button>
       <input type="file" id="file" multiple class="hidden" />
+      <input type="file" id="photoIn" accept="image/*" class="hidden" />
       <input type="file" id="camIn" accept="image/*" capture="environment" class="hidden" />
       <input type="file" id="scanIn" accept="image/*" multiple class="hidden" />
     </div>
@@ -228,6 +266,32 @@ const store = { get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)
 const rid = (n) => [...crypto.getRandomValues(new Uint8Array(n))].map((b) => b.toString(16).padStart(2, '0')).join('');
 const me = store.get('me') || { id: rid(6), name: isPhone ? 'My iPhone' : 'My laptop' };
 me.kind = isPhone ? 'phone' : 'desk'; store.set('me', me);
+const UA = navigator.userAgent;
+me.model = /iPhone/.test(UA) ? 'iPhone' : /iPad/.test(UA) || (navigator.maxTouchPoints > 1 && /Mac/.test(UA)) ? 'iPad' : /Android/.test(UA) ? ((UA.match(/Android [\d.]+; ([^;)]+)/) || [])[1] || 'Android phone').replace(/ Build.*/, '') : /Windows/.test(UA) ? 'Windows PC' : /Mac/.test(UA) ? 'Mac' : 'Computer';
+navigator.userAgentData?.getHighEntropyValues?.(['model']).then((v) => { if (v.model) { me.model = v.model; store.set('me', me); } }).catch(() => {});
+let avatars = store.get('avatars', {}); // peer id -> small photo
+let keys = store.get('keys', {});       // laptop id -> remote-control key
+const I = {
+  laptop: '<rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 19h20"/>',
+  phone: '<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
+  play: '<path d="M8 5.5v13l10-6.5z"/>', prev: '<path d="M15 6l-6 6 6 6"/>', next: '<path d="M9 6l6 6-6 6"/>',
+  tprev: '<path d="M18 6v12L10 12zM6 6v12"/>', tnext: '<path d="M6 6v12l8-6zM18 6v12"/>',
+  vdown: '<path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 12h4"/>', vup: '<path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 12h5M18 9.5v5"/>',
+  mute: '<path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/>',
+  present: '<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M12 16v4M8.5 20h7M10 8l4 2-4 2z"/>', stop: '<rect x="6.5" y="6.5" width="11" height="11" rx="2"/>',
+  desktop: '<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/>',
+  folder: '<path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2h9A1.5 1.5 0 0 1 21 9.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/>',
+  youtube: '<rect x="3" y="6" width="18" height="12" rx="4"/><path d="M10.5 9.5v5l4-2.5z"/>', music: '<path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>',
+  lock: '<rect x="5" y="11" width="14" height="9.5" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>', moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+  restart: '<path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v5h-5"/>', power: '<path d="M12 3v8"/><path d="M6.4 7a8 8 0 1 0 11.2 0"/>',
+  pointer: '<path d="M6 3l12 8-5.5 1.5L10 18z"/>', keyboard: '<rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h.01M9.5 10h.01M13 10h.01M16.5 10h.01M7 14.5h10"/>',
+  camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>', bolt: '<path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"/>',
+  bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>', user: '<circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5c1.5-4 4.3-5.5 7.5-5.5s6 1.5 7.5 5.5"/>',
+};
+const ico = (n) => `<svg class="ic" viewBox="0 0 24 24">${I[n] || ''}</svg>`;
+const avatarHtml = (src, name, cls = 'av') => src ? `<div class="${cls}" style="background-image:url('${src}')"></div>` : `<div class="${cls}">${esc((name || '?').trim()[0] || '?').toUpperCase()}</div>`;
+const devIcon = (p) => `<div class="dv">${ico(p?.kind === 'phone' ? 'phone' : 'laptop')}</div>`;
 let trusted = store.get('trusted', {});
 const peers = new Map();
 let pending = null;
@@ -291,6 +355,7 @@ const T = 'flickapp/v1';
 let mq, room;
 async function sha(s) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('flick:' + s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join(''); }
 async function start() {
+  await Promise.race([helperReady, new Promise((r) => setTimeout(r, 900))]);
   let ip = 'unknown';
   try { ip = (await (await fetch('https://api.ipify.org?format=json')).json()).ip; } catch {}
   room = (await sha(ip)).slice(0, 20);
@@ -303,7 +368,7 @@ function connectBroker(i) {
   mq.on('message', (_t, buf) => { try { onSignal(JSON.parse(buf.toString())); } catch {} });
   setTimeout(() => { if (!ok) { mq.end(true); connectBroker(i + 1); } }, 7000);
 }
-const pub = (topic, msg) => mq?.connected && mq.publish(topic, JSON.stringify({ ...msg, from: me.id, name: me.name, kind: me.kind }));
+const pub = (topic, msg) => mq?.connected && mq.publish(topic, JSON.stringify({ ...msg, from: me.id, name: me.name, kind: me.kind, model: me.model }));
 const toDev = (id, msg) => pub(`${T}/dev/${id}`, msg);
 function hello() { pub(`${T}/room/${room}`, { type: 'hello' }); for (const id in trusted) toDev(id, { type: 'hello' }); }
 setInterval(hello, 5000);
@@ -311,7 +376,7 @@ setInterval(hello, 5000);
 function seen(m) {
   if (m.from === me.id) return null;
   let p = peers.get(m.from); if (!p) { p = { id: m.from }; peers.set(m.from, p); }
-  p.name = m.name; p.kind = m.kind; p.seen = Date.now();
+  p.name = m.name; p.kind = m.kind; p.seen = Date.now(); if (m.model) p.model = m.model; if (m.helper) p.helperSeen = Date.now();
   if (trusted[p.id] && trusted[p.id] !== p.name) { trusted[p.id] = p.name; store.set('trusted', trusted); }
   return p;
 }
@@ -325,14 +390,49 @@ function paired(p) { island(p.name, 'Paired'); wave('down'); buzz([15, 40, 15]);
 async function onSignal(m) {
   const p = seen(m); if (!p) return;
   if (m.type === 'hello') { renderDevices(); link(p); }
-  if (m.type === 'pair-req') acceptSheet(p, `<p>Check this code shows on ${esc(p.name)}</p><div class="code">${esc(m.code)}</div>`);
+  if (m.type === 'pair-req') { if (m.avatar) setAvatar(p.id, m.avatar); if (helperInfo) return; acceptSheet(p, `<p>Check this code shows on ${esc(p.name)}</p><div class="code">${esc(m.code)}</div>`); }
+  if (m.type === 'pair-key' && pending?.id === p.id && pending.kp) {
+    const lap = b64d(m.pub); pending.lapPub = lap;
+    const code = await sasCode(pending.myPub, lap);
+    showSheet(`<h3>Check your laptop</h3><p>Click <b>Yes</b> on ${esc(p.name)} if it shows this code</p><div class="code">${code}</div>
+      <div class="btns"><button class="btn" data-a="cancel">Cancel</button></div>`, () => (pending = null));
+  }
+  if (m.type === 'pair-ok' && pending?.id === p.id && pending.lapPub && m.ct) {
+    try {
+      const raw = await deriveKey(pending.kp, pending.lapPub);
+      await openBox(raw, m); keys[p.id] = b64e(raw); store.set('keys', keys);
+    } catch { pending = null; return toast('Pairing failed'); }
+    pending = null; trust(p); closeSheet(); paired(p); return;
+  }
   if (m.type === 'code-join' && pending?.code) { pending = null; acceptSheet(p, '<p>Entered your code</p>'); }
   if (m.type === 'pair-ok' && pending && (pending.id === p.id || pending.joining)) { pending = null; trust(p); closeSheet(); paired(p); }
   if (m.type === 'pair-no' && pending) { pending = null; closeSheet(); toast(p.name + ' declined'); }
   if (m.type === 'sig' && trusted[p.id]) onRtc(p, m.data);
+  if (m.type === 'res' && keys[p.id]) onRes(p, m);
 }
 function trust(p) { trusted[p.id] = p.name; store.set('trusted', trusted); renderDevices(); }
-function forget(p) { delete trusted[p.id]; store.set('trusted', trusted); drop(p); renderDevices(); }
+function forget(p) {
+  if (keys[p.id]) { sealFor(p.id, { a: 'unpair', ts: Date.now(), n: rid(8) }).then((b) => toDev(p.id, { type: 'unpair', ...b })).catch(() => {}); delete keys[p.id]; store.set('keys', keys); }
+  if (helperInfo) helperSend({ t: 'forget', id: p.id });
+  delete trusted[p.id]; store.set('trusted', trusted); drop(p); renderDevices();
+}
+function setAvatar(id, src) { if (!src || src.length > 20000) return; avatars[id] = src; store.set('avatars', avatars); renderTitle(); }
+
+// ---------- keys (each paired laptop gets its own) ----------
+const b64e = (u) => btoa(String.fromCharCode(...new Uint8Array(u)));
+const b64d = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+async function sasCode(a, b) { const h = new Uint8Array(await crypto.subtle.digest('SHA-256', new Uint8Array([...a, ...b]))); return String(new DataView(h.buffer).getUint32(0) % 10000).padStart(4, '0'); }
+async function deriveKey(kp, lapPub) {
+  const peer = await crypto.subtle.importKey('raw', lapPub, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+  return new Uint8Array(await crypto.subtle.digest('SHA-256', await crypto.subtle.deriveBits({ name: 'ECDH', public: peer }, kp.privateKey, 256)));
+}
+const aes = (raw) => crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['encrypt', 'decrypt']);
+async function sealFor(id, obj) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await aes(b64d(keys[id])), new TextEncoder().encode(JSON.stringify(obj)));
+  return { iv: b64e(iv), ct: b64e(ct) };
+}
+async function openBox(raw, { iv, ct }) { return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64d(iv) }, await aes(raw), b64d(ct)))); }
 
 // ---------- direct link (files never touch a server) ----------
 const ICE = { iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }] };
@@ -363,13 +463,13 @@ function drop(p) { try { p.dc?.close(); p.pc?.close(); } catch {} p.pc = p.dc = 
 function setupDc(p, dc) {
   dc.binaryType = 'arraybuffer'; p.dc = dc;
   let batch = null, cur = null;
-  dc.onopen = () => { renderDevices(); island(p.name, 'Connected'); buzz(20); if (!isPhone) sendCaps(); };
+  dc.onopen = () => { renderDevices(); island(p.name, 'Connected'); buzz(20); dc.send(JSON.stringify({ t: 'profile', avatar: me.avatar || '', model: me.model })); };
   dc.onclose = () => drop(p);
   dc.onmessage = (e) => {
     if (typeof e.data !== 'string') { if (cur) { cur.parts.push(e.data); cur.got += e.data.byteLength; batch.got += e.data.byteLength; if (batch.total) island(p.name, `Receiving · ${Math.round(100 * batch.got / batch.total)}%`, batch.got / batch.total); } return; }
     const m = JSON.parse(e.data);
-    if (m.t === 'caps') { p.helper = m.helper; p.mirror = m.mirror; return; }
-    if (m.t === 'cmd') { helperSend(m); return; }
+    if (m.t === 'profile') { if (m.avatar) setAvatar(p.id, m.avatar); if (m.model) p.model = m.model; return; }
+    if (m.t === 'ring') { ringMe(p.name); return; }
     if (m.t === 'offer') { offerSheet(p, m); return; }
     if (m.t === 'cancel') { if ($('#sheet').dataset.k === 'offer:' + m.id) { closeSheet(); toast(p.name + ' cancelled'); } return; }
     if ((m.t === 'accept' || m.t === 'decline') && outgoing?.id === m.id) { outgoing.done(m); return; }
@@ -452,12 +552,15 @@ setInterval(renderDevices, 4000);
 function devSheet() {
   const now = Date.now(), near = [...peers.values()].filter((p) => now - p.seen < 15000);
   const mine = Object.entries(trusted), others = near.filter((p) => !trusted[p.id]);
-  const row = (id, name, sub, act) => `<div class="r" data-a="${id}"><div class="th">${esc(name[0] || '?').toUpperCase()}</div><div class="nm">${esc(name)}<div class="sub">${sub}</div></div><div class="act">${act}</div></div>`;
-  showSheet(`<h3>Devices</h3><p>This device · <u data-a="rename">${esc(me.name)}</u></p>
-    ${mine.length ? '<div class="lbl">Paired</div><div class="rows">' + mine.map(([id, n]) => { const p = peers.get(id); return row('f' + id, n, p?.dc?.readyState === 'open' ? 'Ready' : 'Not open', 'Forget'); }).join('') + '</div>' : ''}
-    <div class="lbl">Nearby</div><div class="rows">${others.length ? others.map((p) => row('p' + p.id, p.name, 'Same Wi-Fi', 'Pair')).join('') : '<div class="sub" style="padding:8px 4px">Open Flick on your other device</div>'}</div>
+  const row = (id, p, name, sub, act) => `<div class="r" data-a="${id}">${avatars[p?.id] ? avatarHtml(avatars[p.id], name, 'th') : `<div class="th">${ico(p?.kind === 'phone' ? 'phone' : 'laptop')}</div>`}<div class="nm">${esc(name)}<div class="sub">${esc(sub)}</div></div><div class="act">${act}</div></div>`;
+  const state = (id, p) => [p?.model, isOn(p) ? 'Connected' : remoteOk(p) ? 'Remote ready' : 'Not open'].filter(Boolean).join(' · ');
+  showSheet(`<h3>Devices</h3>
+    <div class="me-row"><div data-a="photo">${avatarHtml(me.avatar, me.name)}</div><div style="flex:1;min-width:0"><b>${esc(me.name)}</b><small>${esc(me.model)}</small></div><button class="act" style="color:#8fb8ff;font-weight:600" data-a="rename">Edit</button></div>
+    ${mine.length ? '<div class="lbl">Paired</div><div class="rows">' + mine.map(([id, n]) => { const p = peers.get(id) || { id }; return row('f' + id, p, n, state(id, p), 'Forget'); }).join('') + '</div>' : ''}
+    <div class="lbl">Nearby</div><div class="rows">${others.length ? others.map((p) => row('p' + p.id, p, p.name, [p.model, 'Same Wi-Fi'].filter(Boolean).join(' · '), 'Pair')).join('') : '<div class="sub" style="padding:8px 4px">Open Flick on your other device</div>'}</div>
     <div class="btns"><button class="btn" data-a="code">Use a code</button><button class="btn" data-a="close">Done</button></div>`, (a) => {
-    if (a === 'rename') { const n = prompt('Device name', me.name); if (n && n.trim()) { me.name = n.trim().slice(0, 24); store.set('me', me); hello(); } devSheet(); return 'keep'; }
+    if (a === 'rename') { const n = prompt('Your device name', me.name); if (n && n.trim()) { me.name = n.trim().slice(0, 24); store.set('me', me); helperSend({ t: 'rename', name: me.name }); hello(); renderTitle(); } devSheet(); return 'keep'; }
+    if (a === 'photo') { $('#photoIn').click(); return 'keep'; }
     if (a === 'code') { codeSheet(); return 'keep'; }
     if (a[0] === 'f') { const id = a.slice(1); if (confirm(`Forget ${trusted[id]}?`)) { const p = peers.get(id) || { id }; forget(p); } devSheet(); return 'keep'; }
     if (a[0] === 'p') { const p = peers.get(a.slice(1)); if (p) askPair(p); return 'keep'; }
@@ -465,10 +568,16 @@ function devSheet() {
 }
 $('#devBtn').onclick = devSheet;
 
-function askPair(p) {
+async function askPair(p) {
   const code = String(Math.floor(1000 + Math.random() * 9000));
   pending = { id: p.id };
-  toDev(p.id, { type: 'pair-req', code });
+  if (Date.now() - (p.helperSeen || 0) < 20000) { // laptop with Flick for Windows: exchange keys, confirm on the laptop
+    const kp = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
+    pending = { id: p.id, kp, myPub: new Uint8Array(await crypto.subtle.exportKey('raw', kp.publicKey)) };
+    toDev(p.id, { type: 'pair-req', code, pub: b64e(pending.myPub), avatar: me.avatar || '' });
+    return showSheet(`<h3>Connecting to ${esc(p.name)}</h3><p>A box will pop up on the laptop</p><div class="btns"><button class="btn" data-a="cancel">Cancel</button></div>`, () => (pending = null));
+  }
+  toDev(p.id, { type: 'pair-req', code, avatar: me.avatar || '' });
   showSheet(`<h3>Pairing with ${esc(p.name)}</h3><p>Accept this code on ${esc(p.name)}</p><div class="code">${code}</div>
     <div class="btns"><button class="btn" data-a="cancel">Cancel</button></div>`, () => (pending = null));
 }
@@ -556,10 +665,17 @@ $('#clear').onclick = () => { if (!confirm('Clear everything you received?')) re
 dbAll().then((all) => all.sort((a, b) => a.time - b.time).forEach((b) => addFolder(b)));
 
 // ---------- title ----------
+const isOn = (p) => p?.dc?.readyState === 'open';
+const remoteOk = (p) => !!(p && keys[p.id] && Date.now() - (p.helperSeen || 0) < 20000);
 function renderTitle() {
-  const on = live()[0];
-  const to = on ? `<br><span>to ${esc(on.name)}</span>` : Object.keys(trusted).length ? '<br><span>Open Flick on your other device</span>' : '<br><span>Tap Devices to pair</span>';
-  $('#title').innerHTML = (isPhone ? (picked.length ? `${picked.length} ready.` : 'Flick to send.') : 'Throw to send.') + to;
+  $('#title').innerHTML = isPhone ? (picked.length ? `${picked.length} ready.<br><span>Flick to send.</span>` : 'Flick to send.') : 'Throw to send.';
+  const p = live()[0] || [...peers.values()].find(remoteOk);
+  const el = $('#link');
+  if (!p) { el.innerHTML = `${avatarHtml(me.avatar, me.name)}<div class="wire off"></div><div class="dv">${ico(isPhone ? 'laptop' : 'phone')}</div><div><b>${Object.keys(trusted).length ? 'Not connected' : 'Pair a device'}</b><small>${Object.keys(trusted).length ? 'Open Flick on your other device' : 'Tap to start'}</small></div>`; }
+  else el.innerHTML = `${avatarHtml(me.avatar, me.name)}<div class="wire"></div>${avatars[p.id] ? avatarHtml(avatars[p.id], p.name) : devIcon(p)}<div><b>${esc(p.name)}</b><small>${esc(p.model || (p.kind === 'phone' ? 'Phone' : 'Computer'))}${isOn(p) ? '' : ' · Remote'}</small></div>`;
+  el.onclick = devSheet;
+  const ph = live().find((x) => x.kind === 'phone'); $('#ringBtn').classList.toggle('hidden', isPhone || !ph);
+  $('#ringBtn').innerHTML = ico('bell') + 'Ring phone';
 }
 
 // ---------- phone: pick, flick ----------
@@ -675,34 +791,146 @@ if (!isPhone) {
   }
 }
 
-// ---------- Flick Helper (laptop) ----------
-let helper = null, helperInfo = null;
+// ---------- profile photo ----------
+$('#photoIn').onchange = async (e) => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  const img = new Image(); img.src = URL.createObjectURL(f); await img.decode();
+  const c = document.createElement('canvas'), n = 128, m = Math.min(img.width, img.height); c.width = c.height = n;
+  c.getContext('2d').drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, n, n);
+  me.avatar = c.toDataURL('image/jpeg', .8); store.set('me', me);
+  live().forEach((p) => p.dc.send(JSON.stringify({ t: 'profile', avatar: me.avatar, model: me.model })));
+  renderTitle(); devSheet();
+};
+
+// ---------- Flick for Windows on this laptop (same identity, shared pairing) ----------
+let helper = null, helperInfo = null, helperFirst;
+const helperReady = new Promise((r) => (helperFirst = r));
 function helperConnect() {
-  if (isPhone) return;
-  try { helper = new WebSocket('ws://127.0.0.1:4041'); } catch { return setTimeout(helperConnect, 8000); }
-  helper.onmessage = (e) => { helperInfo = JSON.parse(e.data); sendCaps(); };
-  helper.onclose = () => { helper = null; helperInfo = null; sendCaps(); setTimeout(helperConnect, 8000); };
+  if (isPhone) return helperFirst();
+  try { helper = new WebSocket('ws://127.0.0.1:4041'); } catch { helperFirst(); return setTimeout(helperConnect, 8000); }
+  helper.onerror = () => helperFirst();
+  helper.onmessage = (e) => {
+    const m = JSON.parse(e.data);
+    if (m.t === 'hi') {
+      helperInfo = m;
+      const changed = me.id !== m.id;
+      Object.assign(me, { id: m.id, name: m.name, model: m.model }); store.set('me', me);
+      for (const [id, v] of Object.entries(m.trusted || {})) { trusted[id] = v.name; if (v.avatar) avatars[id] = v.avatar; }
+      store.set('trusted', trusted); store.set('avatars', avatars);
+      if (changed && mq) { mq.end(true); connectBroker(0); }
+      helperFirst(); renderTitle();
+    }
+    if (m.t === 'trusted') { const p = peers.get(m.id) || { id: m.id, name: m.name, kind: 'phone' }; peers.set(m.id, p); if (m.avatar) setAvatar(m.id, m.avatar); trust(p); paired(p); }
+    if (m.t === 'untrusted') { const p = peers.get(m.id); if (p) forget(p); }
+  };
+  helper.onclose = () => { helper = null; helperInfo = null; helperFirst(); setTimeout(helperConnect, 8000); };
 }
-function sendCaps() { live().forEach((p) => p.dc.send(JSON.stringify({ t: 'caps', helper: !!helperInfo, mirror: helperInfo?.mirror, name: helperInfo?.name }))); }
 function helperSend(m) { if (helper?.readyState === 1) helper.send(JSON.stringify(m)); }
+function sendCaps() {}
 helperConnect();
 
+// ---------- find my phone ----------
+let ringing;
+$('#ringBtn').onclick = () => { const p = live().find((x) => x.kind === 'phone'); if (p) { p.dc.send(JSON.stringify({ t: 'ring' })); toast('Ringing ' + p.name); } };
+function ringMe(from) {
+  if (ringing) return;
+  const beep = () => { try { sfx('down'); } catch {} buzz([300, 150, 300]); };
+  beep(); ringing = setInterval(beep, 1600);
+  showSheet(`<div style="display:flex;justify-content:center;margin-bottom:10px"><div class="dv" style="width:64px;height:64px;border-radius:20px;color:#fff;box-shadow:0 0 40px rgba(80,150,255,.6)">${ico('bell')}</div></div><h3>${esc(from)} is looking for this phone</h3>
+    <div class="btns"><button class="btn pri" data-a="found">Found it</button></div>`, () => { clearInterval(ringing); ringing = null; });
+}
+
 // ---------- phone: control the laptop ----------
-const KEYS = [['prev', '⏮', 'Back'], ['play', '⏯', 'Play'], ['next', '⏭', 'Next'], ['voldown', '🔉', 'Vol −'], ['mute', '🔇', 'Mute'], ['volup', '🔊', 'Vol +'],
-  ['slideshow', '▶️', 'Slideshow'], ['endshow', '⏹', 'End show'], ['desktop', '🖥', 'Desktop'], ['open:chrome', '🌐', 'Chrome'], ['open:explorer', '📂', 'Files'], ['lock', '🔒', 'Lock']];
-function remoteSheet() {
-  const p = live()[0];
-  if (!p) return toast(Object.keys(trusted).length ? 'Open Flick on your laptop' : 'Pair a device first');
-  if (!p.helper) return showSheet(`<h3>${esc(p.name)}</h3><p>Install Flick Helper on the laptop to mirror your screen and use shortcuts</p><div class="btns"><button class="btn" data-a="close">OK</button></div>`);
-  showSheet(`<h3>${esc(p.name)}</h3>
-    <div class="lbl">Mirror this iPhone</div>
-    <div class="steps">1. Swipe down from the top-right corner<br>2. Tap <b>Screen Mirroring</b> → <b>Flick</b><br>3. Type the code shown on the laptop</div>
-    <div class="lbl">Shortcuts</div>
-    <div class="keys">${KEYS.map(([a, i, l]) => `<button class="key" data-a="${a}"><i>${i}</i>${l}</button>`).join('')}</div>
+const pendingRes = new Map(); let shots = {};
+async function cmd(id, a, arg) {
+  if (!keys[id]) throw new Error('not paired');
+  const n = rid(8); toDev(id, { type: 'cmd', ...(await sealFor(id, { a, arg, ts: Date.now(), n })) });
+  return n;
+}
+async function onRes(p, m) {
+  let r; try { r = await openBox(b64d(keys[p.id]), m); } catch { return; }
+  if (r.r === 'status') { Object.assign(p, { battery: r.battery, charging: r.charging, model: r.model || p.model }); renderHero(p); }
+  if (r.r === 'shot') {
+    const s = (shots[r.id] ||= []); s[r.i] = r.d;
+    if (s.filter(Boolean).length === r.n) { const el = $('#shot'); if (el) el.innerHTML = `<img src="data:image/jpeg;base64,${s.join('')}">`; delete shots[r.id]; }
+  }
+}
+let unlocked = false;
+async function verifyOwner() { // Face ID / Touch ID / screen lock before controlling the laptop
+  if (unlocked) return true;
+  try {
+    if (!window.PublicKeyCredential) return (unlocked = true);
+    const rnd = (n) => crypto.getRandomValues(new Uint8Array(n)), id = store.get('pk');
+    if (!id) {
+      const c = await navigator.credentials.create({ publicKey: { challenge: rnd(32), rp: { name: 'Flick' }, user: { id: rnd(16), name: me.name, displayName: me.name },
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }], authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'preferred' }, timeout: 60000 } });
+      store.set('pk', b64e(c.rawId));
+    } else await navigator.credentials.get({ publicKey: { challenge: rnd(32), allowCredentials: [{ type: 'public-key', id: b64d(id) }], userVerification: 'required', timeout: 60000 } });
+    return (unlocked = true);
+  } catch (e) { if (e?.name === 'NotAllowedError') { toast('Not verified'); return false; } return (unlocked = true); }
+}
+function batRing(p) {
+  if (p.battery == null) return `<div class="bat"><span>${ico('laptop')}</span></div>`;
+  const c = 2 * Math.PI * 23, col = p.charging ? '#3ddc97' : p.battery <= 20 ? '#ff6b6b' : '#4b8dff';
+  return `<div class="bat"><svg viewBox="0 0 54 54"><circle cx="27" cy="27" r="23" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="4"/><circle cx="27" cy="27" r="23" fill="none" stroke="${col}" stroke-width="4" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - p.battery / 100)}" style="filter:drop-shadow(0 0 6px ${col})"/></svg><span>${p.charging ? '<svg class="ic" style="width:14px;height:14px;color:#3ddc97" viewBox="0 0 24 24">' + I.bolt + '</svg>' : ''}${p.battery}%</span></div>`;
+}
+function renderHero(p) { const h = $('#hero'); if (h) h.innerHTML = `${devIcon(p)}<div class="tx"><b>${esc(p.name)}</b><small>${esc(p.model || 'Windows PC')}${p.battery != null ? ' · ' + (p.charging ? 'Charging' : 'On battery') : ''}</small></div>${batRing(p)}`; }
+const T4 = (items) => `<div class="tiles">${items.map(([a, i, l, w]) => `<button class="tl${w ? ' warn' : ''}" data-a="${a}">${ico(i)}${l}</button>`).join('')}</div>`;
+async function remoteSheet() {
+  const p = [...peers.values()].find(remoteOk);
+  if (!p) {
+    const any = Object.keys(keys).length;
+    return showSheet(`<h3>Control your laptop</h3><p>${any ? 'Your laptop is off or offline' : 'Install Flick for Windows on your laptop, then pair it in Devices'}</p>
+      <div class="btns">${any ? '' : '<button class="btn pri" data-a="get">Get Flick for Windows</button>'}<button class="btn" data-a="close">OK</button></div>`, (a) => { if (a === 'get') window.open('https://github.com/moyososvbL/Flick/releases/tag/windows', '_blank'); });
+  }
+  if (!(await verifyOwner())) return;
+  const run = (a, arg) => { cmd(p.id, a, arg); buzz(8); };
+  showSheet(`<div class="hero" id="hero"></div>
+    <div class="shot" id="shot" data-a="shot">${ico('camera')}See screen</div>
+    <div class="lbl">Media</div>${T4([['track_prev', 'tprev', 'Previous'], ['play', 'play', 'Play'], ['track_next', 'tnext', 'Next'], ['mute', 'mute', 'Mute']])}
+    ${T4([['voldown', 'vdown', 'Vol −'], ['volup', 'vup', 'Vol +'], ['pad', 'pointer', 'Trackpad'], ['kb', 'keyboard', 'Type']])}
+    <div class="lbl">Slides</div>${T4([['prev', 'prev', 'Back'], ['next', 'next', 'Next'], ['slideshow', 'present', 'Start'], ['endshow', 'stop', 'End']])}
+    <div class="lbl">Open</div>${T4([['open:chrome', 'globe', 'Chrome'], ['open:files', 'folder', 'Files'], ['open:youtube', 'youtube', 'YouTube'], ['desktop', 'desktop', 'Desktop']])}
+    <div class="lbl">Power</div>${T4([['lock', 'lock', 'Lock'], ['sleep', 'moon', 'Sleep'], ['restart', 'restart', 'Restart', 1], ['shutdown', 'power', 'Shut down', 1]])}
     <div class="btns"><button class="btn" data-a="close">Done</button></div>`, (a) => {
     if (a === 'close') return;
-    const [act, arg] = a.split(':'); p.dc.send(JSON.stringify({ t: 'cmd', a: act, arg })); buzz(10); return 'keep';
-  });
+    if (a === 'shot') { $('#shot').innerHTML = '<small>Taking screenshot…</small>'; run('shot'); return 'keep'; }
+    if (a === 'pad') { padSheet(p); return 'keep'; }
+    if (a === 'kb') { padSheet(p, true); return 'keep'; }
+    if (a === 'restart' || a === 'shutdown') {
+      const what = a === 'restart' ? 'Restart' : 'Shut down';
+      showSheet(`<h3>${what} ${esc(p.name)}?</h3><p>It will ${a === 'restart' ? 'restart' : 'turn off'} in 10 seconds. Unsaved work may be lost.</p>
+        <div class="btns"><button class="btn" data-a="back">Cancel</button><button class="btn pri" style="background:linear-gradient(180deg,#ff6b6b,#e04848)" data-a="go">${what}</button></div>`, (b) => {
+        if (b === 'go') { run(a); toast(`${what} in 10s · tap to stop`, () => run('cancel')); }
+        if (b === 'back') { remoteSheet(); return 'keep'; }
+      });
+      return 'keep';
+    }
+    const [act, arg] = a.split(':'); run(act, arg); return 'keep';
+  }, 'remote');
+  renderHero(p); run('status');
+}
+function padSheet(p, typing) {
+  showSheet(`<h3>${typing ? 'Type on ' + esc(p.name) : 'Trackpad'}</h3>
+    ${typing ? '' : '<div class="pad" id="pad">Tap to click · Two fingers to scroll · Two-finger tap to right-click</div>'}
+    <div class="kb"><input id="kbIn" placeholder="Type here…" autocomplete="off" ${typing ? 'autofocus' : ''}/><button class="btn pri" style="flex:none;padding:13px 18px" data-a="send">Send</button></div>
+    <div class="btns"><button class="btn" data-a="bk">⌫</button><button class="btn" data-a="enter">Enter</button><button class="btn" data-a="back">Done</button></div>`, (a) => {
+    if (a === 'send') { const v = $('#kbIn').value; if (v) cmd(p.id, 'type', v); $('#kbIn').value = ''; return 'keep'; }
+    if (a === 'enter') { cmd(p.id, 'enter'); return 'keep'; }
+    if (a === 'bk') { cmd(p.id, 'backspace'); return 'keep'; }
+    if (a === 'back') { remoteSheet(); return 'keep'; }
+  }, 'pad');
+  $('#kbIn').onkeydown = (e) => { if (e.key === 'Enter') { const v = e.target.value; cmd(p.id, v ? 'type' : 'enter', v ? v + '\n' : undefined); e.target.value = ''; } };
+  const pad = $('#pad'); if (!pad) return;
+  let last = null, moved = 0, acc = [0, 0], two = false, t0 = 0, sy = 0;
+  const flush = setInterval(() => { if (!$('#pad')) return clearInterval(flush); if (acc[0] || acc[1]) { cmd(p.id, 'move', acc.map((v) => Math.round(v))); acc = [0, 0]; } }, 70);
+  pad.ontouchstart = (e) => { e.preventDefault(); two = e.touches.length > 1; t0 = Date.now(); moved = 0; last = [e.touches[0].clientX, e.touches[0].clientY]; sy = 0; };
+  pad.ontouchmove = (e) => {
+    e.preventDefault(); const t = e.touches[0], dx = t.clientX - last[0], dy = t.clientY - last[1]; last = [t.clientX, t.clientY]; moved += Math.abs(dx) + Math.abs(dy);
+    if (e.touches.length > 1) { sy += dy; if (Math.abs(sy) > 18) { cmd(p.id, 'scroll', Math.round(-sy * 4)); sy = 0; } return; }
+    const k = 1.6 + Math.min(2.5, Math.hypot(dx, dy) / 12); acc[0] += dx * k; acc[1] += dy * k;
+  };
+  pad.ontouchend = (e) => { e.preventDefault(); if (e.touches.length) return; if (moved < 8 && Date.now() - t0 < 300) { cmd(p.id, two ? 'rclick' : 'click'); buzz(8); } two = false; };
 }
 if (isPhone) $('#remote').onclick = remoteSheet;
 

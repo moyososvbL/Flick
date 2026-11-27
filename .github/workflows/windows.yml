@@ -1,0 +1,38 @@
+name: Build Flick for Windows
+on:
+  push:
+    branches: [main]
+    paths: ['helper/**', '.github/workflows/windows.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Bundle
+        working-directory: helper
+        run: |
+          npm install --no-audit --no-fund
+          npx -y esbuild@0.24 helper.js --bundle --platform=node --format=cjs --target=node22 --external:bufferutil --external:utf-8-validate --outfile=dist/flick.cjs
+      - name: Make Flick.exe
+        working-directory: helper/dist
+        shell: pwsh
+        run: |
+          '{"main":"flick.cjs","output":"sea.blob","disableExperimentalSEAWarning":true,"useCodeCache":true}' | Set-Content sea.json
+          node --experimental-sea-config sea.json
+          Copy-Item (Get-Command node).Source Flick.exe
+          $signtool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe" -ErrorAction SilentlyContinue | Select-Object -Last 1
+          if ($signtool) { & $signtool.FullName remove /s Flick.exe }
+          npx -y postject Flick.exe NODE_SEA_BLOB sea.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
+          # run without a console window
+          node -e "const f=require('fs');const b=f.readFileSync('Flick.exe');const pe=b.readUInt32LE(0x3c);b.writeUInt16LE(2,pe+24+68);f.writeFileSync('Flick.exe',b)"
+      - name: Publish
+        shell: pwsh
+        env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
+        run: |
+          gh release delete windows --yes --cleanup-tag 2>$null
+          gh release create windows helper/dist/Flick.exe --title "Flick for Windows" --notes "Download **Flick.exe** and open it once. It installs itself and starts with Windows. To remove: run Flick.exe --uninstall."

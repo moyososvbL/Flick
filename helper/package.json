@@ -1,1 +1,7 @@
-{ "name": "flick-helper", "version": "0.1.0", "private": true, "type": "module", "scripts": { "start": "node helper.js" }, "dependencies": { "ws": "^8.18.0" } }
+{
+  "name": "flick-windows",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": { "start": "node helper.js" },
+  "dependencies": { "mqtt": "^5.10.1", "ws": "^8.18.0" }
+}
