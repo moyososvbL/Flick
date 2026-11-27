@@ -39,11 +39,16 @@ $x = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Wi
 $t = $x.GetElementsByTagName('text'); $t[0].AppendChild($x.CreateTextNode('${q(title)}')) > $null; $t[1].AppendChild($x.CreateTextNode('${q(body)}')) > $null
 [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe').Show([Windows.UI.Notifications.ToastNotification]::new($x))`)], { windowsHide: true, detached: true, stdio: 'ignore' }).unref();
 }
-async function askYesNo(text) {
-  const r = await ps(`Add-Type -AssemblyName System.Windows.Forms
-$f = New-Object System.Windows.Forms.Form -Property @{TopMost=$true}
-[System.Windows.Forms.MessageBox]::Show($f, '${q(text)}', 'Flick', 'YesNo', 'Question')`);
-  return /yes/i.test(r);
+function askYesNo(text) { // a normal, always-on-top Windows box (wscript has no console window to hide)
+  const vbs = path.join(DIR, 'ask.vbs');
+  const lines = text.split('\n').map((l) => '"' + l.replace(/"/g, '""') + '"').join(' & vbCrLf & ');
+  fs.writeFileSync(vbs, `r = MsgBox(${lines}, vbYesNo + vbQuestion + vbSystemModal + vbDefaultButton2, "Flick")\r\nWScript.Quit r\r\n`);
+  return new Promise((ok) => {
+    const p = spawn('wscript.exe', ['//nologo', vbs]);
+    const t = setTimeout(() => { try { p.kill(); } catch {} ok(false); }, 120000);
+    p.on('exit', (code) => { clearTimeout(t); ok(code === 6); });
+    p.on('error', (e) => { clearTimeout(t); log('popup failed', e.message); ok(false); });
+  });
 }
 
 // ---------- install / autostart (only when running as Flick.exe) ----------
@@ -189,9 +194,12 @@ setInterval(hello, 5000);
 setInterval(async () => { const r = sha('flick:' + (await publicIp())).toString('hex').slice(0, 20); if (r !== room && mq?.connected) { mq.unsubscribe(`${T}/room/${room}`); room = r; mq.subscribe(`${T}/room/${room}`); } }, 60000);
 
 const pairing = new Map(); // phoneId -> { ecdh, phonePub, code }
+const sightings = new Set();
 async function onMessage(m) {
   if (!m.from || m.from === conf.id) return;
+  if (!sightings.has(m.from)) { sightings.add(m.from); log('sees', m.name || '?', m.model || '', m.type); }
   if (m.type === 'pair-req' && m.pub) {
+    log('pair request from', m.name, m.model || '');
     if (pairing.has(m.from)) return;
     const ecdh = crypto.createECDH('prime256v1'); ecdh.generateKeys();
     const phonePub = Buffer.from(m.pub, 'base64'), myPub = ecdh.getPublicKey();
@@ -200,6 +208,7 @@ async function onMessage(m) {
     toDev(m.from, { type: 'pair-key', pub: myPub.toString('base64') });
     const yes = await askYesNo(`${m.name} (${m.model || 'phone'}) wants to connect to this laptop.\n\nCode on the phone: ${code}\n\nOnly allow it if the code matches and it's your phone.`);
     pairing.delete(m.from);
+    log('pair answer:', yes ? 'yes' : 'no');
     if (!yes) return toDev(m.from, { type: 'pair-no' });
     const key = sha(ecdh.computeSecret(phonePub)).toString('base64');
     conf.trusted[m.from] = { name: m.name, model: m.model || '', key, avatar: m.avatar || '' }; save();
