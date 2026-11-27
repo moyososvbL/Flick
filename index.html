@@ -48,16 +48,22 @@
   #island circle.bar { transition:stroke-dashoffset .2s; }
 
   /* AirDrop-style wave */
-  #wave { position:fixed; inset:0; z-index:25; pointer-events:none; opacity:0; backdrop-filter:blur(0); -webkit-backdrop-filter:blur(0); }
-  #wave::before { content:""; position:absolute; left:-20%; right:-20%; height:55%; background:radial-gradient(50% 50% at 50% 50%, rgba(255,255,255,.55), rgba(140,190,255,.25) 40%, transparent 70%); filter:blur(20px); }
-  #wave.up { animation:waveFx 2.2s ease forwards; } #wave.up::before { animation:sweepUp 2.2s cubic-bezier(.35,0,.15,1) forwards; }
-  #wave.down { animation:waveFx 2.2s ease forwards; } #wave.down::before { animation:sweepDown 2.2s cubic-bezier(.35,0,.15,1) forwards; }
-  #wave::after { content:""; position:absolute; left:50%; top:50%; width:40px; height:40px; margin:-20px; border-radius:50%; border:2px solid rgba(200,225,255,.9); box-shadow:0 0 40px rgba(140,190,255,.9), inset 0 0 30px rgba(140,190,255,.6); opacity:0; }
-  #wave.up::after, #wave.down::after { animation:ringOut 2s cubic-bezier(.2,.7,.2,1) .15s forwards; }
-  @keyframes ringOut { 0% { transform:scale(.2); opacity:0; } 20% { opacity:1; } 100% { transform:scale(30); opacity:0; } }
-  @keyframes waveFx { 0% { opacity:0; backdrop-filter:blur(0); -webkit-backdrop-filter:blur(0); } 30% { opacity:1; backdrop-filter:blur(18px) brightness(.8); -webkit-backdrop-filter:blur(18px) brightness(.8); } 60% { opacity:1; backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); } 100% { opacity:0; backdrop-filter:blur(0); -webkit-backdrop-filter:blur(0); } }
-  @keyframes sweepUp { from { top:100%; } to { top:-60%; } }
-  @keyframes sweepDown { from { top:-60%; } to { top:100%; } }
+  /* AirDrop-style: glow creeps in from every edge, content blurs, a bloom rises from the top edge, then clears */
+  #wave { position:fixed; inset:0; z-index:25; pointer-events:none; opacity:0; border-radius:0; backdrop-filter:blur(0); -webkit-backdrop-filter:blur(0); }
+  #wave::before { content:""; position:absolute; inset:0; box-shadow:inset 0 0 0 0 rgba(120,175,255,0); }
+  #wave::after { content:""; position:absolute; left:-30%; right:-30%; top:-45%; height:70%; border-radius:50%; opacity:0;
+                 background:radial-gradient(closest-side, rgba(255,255,255,.95), rgba(190,220,255,.75) 35%, rgba(70,140,255,.35) 65%, transparent 100%); filter:blur(18px); transform:scaleY(.2); transform-origin:50% 0; }
+  #wave.up, #wave.down { animation:edgeBlur 2.6s cubic-bezier(.4,0,.2,1) forwards; }
+  #wave.up::before, #wave.down::before { animation:edgeGlow 2.6s cubic-bezier(.4,0,.2,1) forwards; }
+  #wave.up::after, #wave.down::after { animation:bloom 2.6s cubic-bezier(.3,0,.2,1) forwards; }
+  @keyframes edgeBlur { 0% { opacity:0; backdrop-filter:blur(0); -webkit-backdrop-filter:blur(0); } 18% { opacity:1; }
+    40% { opacity:1; backdrop-filter:blur(16px) saturate(1.2); -webkit-backdrop-filter:blur(16px) saturate(1.2); } 72% { opacity:1; backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); }
+    100% { opacity:0; backdrop-filter:blur(0); -webkit-backdrop-filter:blur(0); } }
+  @keyframes edgeGlow { 0% { box-shadow:inset 0 0 0 0 rgba(120,175,255,0); }
+    35% { box-shadow:inset 0 0 50px 14px rgba(120,175,255,.75), inset 0 0 120px 30px rgba(60,120,255,.35); }
+    60% { box-shadow:inset 0 0 70px 22px rgba(190,220,255,.9), inset 0 0 160px 50px rgba(80,140,255,.45); }
+    100% { box-shadow:inset 0 0 0 0 rgba(120,175,255,0); } }
+  @keyframes bloom { 0%, 30% { opacity:0; transform:scaleY(.2); } 52% { opacity:1; transform:scaleY(1); } 68% { opacity:.9; transform:scaleY(1.35); } 100% { opacity:0; transform:scaleY(1.6); } }
 
   .lbl { font-size:12px; color:var(--dim); margin:18px 4px 2px; text-align:left; }
   .r .sub { font-size:12px; color:var(--dim); }
@@ -328,24 +334,22 @@ function wave(dir) { const w = $('#wave'); w.className = ''; void w.offsetWidth;
 let ac;
 const unlockAudio = () => { try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); ac.resume(); } catch {} };
 addEventListener('pointerdown', unlockAudio, { passive: true });
-function sfx(kind) {
-  if (!ac) return; const t = ac.currentTime;
-  // whoosh: filtered noise sweeping up (send) or down (receive)
-  const len = 1.3, buf = ac.createBuffer(1, ac.sampleRate * len, ac.sampleRate), d = buf.getChannelData(0);
-  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-  const n = ac.createBufferSource(); n.buffer = buf;
-  const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 1.2;
-  const [a, b] = kind === 'up' ? [250, 3200] : [3200, 300];
-  f.frequency.setValueAtTime(a, t); f.frequency.exponentialRampToValueAtTime(b, t + len);
-  const g = ac.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.35, t + 0.45); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
-  n.connect(f).connect(g).connect(ac.destination); n.start(t); n.stop(t + len);
-  // soft chime at the end
-  [[880, 0], [1318.5, 0.09], [1760, 0.18]].forEach(([hz, dt]) => {
-    const o = ac.createOscillator(), og = ac.createGain(), st = t + (kind === 'up' ? 1.05 : 0.9) + dt;
-    o.type = 'sine'; o.frequency.value = hz;
-    og.gain.setValueAtTime(0.0001, st); og.gain.exponentialRampToValueAtTime(0.12, st + 0.02); og.gain.exponentialRampToValueAtTime(0.0001, st + 1.1);
-    o.connect(og).connect(ac.destination); o.start(st); o.stop(st + 1.2);
-  });
+function sfx(kind) { // soft water-drop "plip"s: two rising for send, one landing + warm note for receive
+  if (!ac) return; const t0 = ac.currentTime;
+  const out = ac.createGain(); out.gain.value = 0.5; out.connect(ac.destination);
+  const drop = (t, from, to, vol) => {
+    const o = ac.createOscillator(), g = ac.createGain(); o.type = 'sine';
+    o.frequency.setValueAtTime(from, t); o.frequency.exponentialRampToValueAtTime(to, t + 0.09);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+    o.connect(g).connect(out); o.start(t); o.stop(t + 0.25);
+  };
+  const glow = (t, hz, vol) => {
+    const o = ac.createOscillator(), g = ac.createGain(); o.type = 'triangle'; o.frequency.value = hz;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+    o.connect(g).connect(out); o.start(t); o.stop(t + 1);
+  };
+  if (kind === 'up') { drop(t0 + 0.55, 520, 1250, 0.35); drop(t0 + 0.72, 700, 1650, 0.25); glow(t0 + 0.75, 1318.5, 0.04); }
+  else { drop(t0 + 0.5, 1400, 480, 0.35); glow(t0 + 0.62, 659.3, 0.05); glow(t0 + 0.62, 987.8, 0.03); }
 }
 
 
@@ -926,12 +930,12 @@ function padSheet(p, typing) {
   $('#kbIn').onkeydown = (e) => { if (e.key === 'Enter') { const v = e.target.value; cmd(p.id, v ? 'type' : 'enter', v ? v + '\n' : undefined); e.target.value = ''; } };
   const pad = $('#pad'); if (!pad) return;
   let last = null, moved = 0, acc = [0, 0], two = false, t0 = 0, sy = 0;
-  const flush = setInterval(() => { if (!$('#pad')) return clearInterval(flush); if (acc[0] || acc[1]) { cmd(p.id, 'move', acc.map((v) => Math.round(v))); acc = [0, 0]; } }, 70);
+  const flush = setInterval(() => { if (!$('#pad')) return clearInterval(flush); const mx = Math.trunc(acc[0]), my = Math.trunc(acc[1]); if (mx || my) { cmd(p.id, 'move', [mx, my]); acc = [acc[0] - mx, acc[1] - my]; } }, 40);
   pad.ontouchstart = (e) => { e.preventDefault(); two = e.touches.length > 1; t0 = Date.now(); moved = 0; last = [e.touches[0].clientX, e.touches[0].clientY]; sy = 0; };
   pad.ontouchmove = (e) => {
     e.preventDefault(); const t = e.touches[0], dx = t.clientX - last[0], dy = t.clientY - last[1]; last = [t.clientX, t.clientY]; moved += Math.abs(dx) + Math.abs(dy);
     if (e.touches.length > 1) { sy += dy; if (Math.abs(sy) > 18) { cmd(p.id, 'scroll', Math.round(-sy * 4)); sy = 0; } return; }
-    const k = 1.6 + Math.min(2.5, Math.hypot(dx, dy) / 12); acc[0] += dx * k; acc[1] += dy * k;
+    const sp = Math.hypot(dx, dy), k = 0.9 + Math.min(1.3, sp * sp / 400); acc[0] += dx * k; acc[1] += dy * k;
   };
   pad.ontouchend = (e) => { e.preventDefault(); if (e.touches.length) return; if (moved < 8 && Date.now() - t0 < 300) { cmd(p.id, two ? 'rclick' : 'click'); buzz(8); } two = false; };
 }

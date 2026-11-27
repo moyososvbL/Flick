@@ -117,12 +117,15 @@ function startInput() {
 const INPUT_SCRIPT = `Add-Type @"
 using System; using System.Runtime.InteropServices;
 public class W { [DllImport("user32.dll")] public static extern void mouse_event(int f,int x,int y,int d,int e);
-[DllImport("user32.dll")] public static extern void keybd_event(byte v,byte s,int f,int e); }
+[DllImport("user32.dll")] public static extern void keybd_event(byte v,byte s,int f,int e);
+[DllImport("winmm.dll")] public static extern uint timeBeginPeriod(uint p); }
 "@
 Add-Type -AssemblyName System.Windows.Forms
+[W]::timeBeginPeriod(1) > $null
 while ($true) { $l = [Console]::In.ReadLine(); if ($l -eq $null) { break }; $a = $l.Split(' ')
  switch ($a[0]) {
-  'm' { [W]::mouse_event(1,[int]$a[1],[int]$a[2],0,0) }
+  'm' { $dx=[double]$a[1]; $dy=[double]$a[2]; $n=[Math]::Min(8,[Math]::Max(1,[Math]::Ceiling([Math]::Max([Math]::Abs($dx),[Math]::Abs($dy))/3))); $px=0; $py=0
+        for ($i=1; $i -le $n; $i++) { $tx=[Math]::Round($dx*$i/$n); $ty=[Math]::Round($dy*$i/$n); [W]::mouse_event(1,[int]($tx-$px),[int]($ty-$py),0,0); $px=$tx; $py=$ty; if ($i -lt $n) { [System.Threading.Thread]::Sleep(4) } } }
   'c' { [W]::mouse_event(2,0,0,0,0); [W]::mouse_event(4,0,0,0,0) }
   'r' { [W]::mouse_event(8,0,0,0,0); [W]::mouse_event(16,0,0,0,0) }
   's' { [W]::mouse_event(0x800,0,0,[int]$a[1],0) }
