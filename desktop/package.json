@@ -1,20 +1,51 @@
 {
   "name": "flick",
   "productName": "Flick",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Flick for Windows",
   "author": "moyososvbL",
   "main": "main.js",
   "private": true,
-  "scripts": { "start": "electron .", "dist": "electron-builder --win nsis --publish never" },
-  "dependencies": { "mqtt": "^5.10.1", "ws": "^8.18.0" },
-  "devDependencies": { "electron": "^45.5.0", "electron-builder": "^26.18.0" },
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis --publish never"
+  },
+  "dependencies": {
+    "mqtt": "^5.10.1",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "electron": "^45.5.0",
+    "electron-builder": "^26.18.0"
+  },
   "build": {
     "appId": "app.flick.windows",
     "productName": "Flick",
-    "files": ["main.js", "helper.js", "build/icon.png", "package.json"],
-    "directories": { "buildResources": "build", "output": "dist" },
-    "win": { "target": "nsis", "icon": "build/icon.png" },
-    "nsis": { "oneClick": true, "perMachine": false, "createDesktopShortcut": true, "createStartMenuShortcut": true, "shortcutName": "Flick", "artifactName": "Flick-Setup.exe", "runAfterFinish": true }
+    "files": [
+      "main.js",
+      "helper.js",
+      "preload.js",
+      "edge-preload.js",
+      "edge.html",
+      "build/icon.png",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Flick",
+      "artifactName": "Flick-Setup.exe",
+      "runAfterFinish": true
+    }
   }
 }

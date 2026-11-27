@@ -117,6 +117,25 @@
   .me-row .av { width:56px; height:56px; font-size:22px; cursor:pointer; }
   .me-row b { display:block; font-size:16px; } .me-row small { color:var(--dim); font-size:13px; }
   .ring-btn { display:flex; align-items:center; gap:6px; }
+  .people { display:flex; gap:16px; overflow-x:auto; padding:12px 8px 14px; scrollbar-width:none; }
+  .people::-webkit-scrollbar { display:none; }
+  .person { flex:none; width:68px; display:flex; flex-direction:column; align-items:center; gap:7px; font-size:12px; color:var(--dim); cursor:pointer; text-align:center;
+            animation:popIn .55s cubic-bezier(.2,1.5,.4,1) backwards; animation-delay:calc(var(--i, 0) * 70ms); transition:transform .35s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes popIn { from { opacity:0; transform:translateY(10px) scale(.6); } }
+  .person:hover { transform:translateY(-3px); }
+  .person:active { transform:scale(.9); transition-duration:.1s; }
+  .person .av, .person .dv { width:56px; height:56px; border-radius:50%; font-size:20px; transition:transform .4s cubic-bezier(.2,1.4,.4,1), box-shadow .4s; }
+  .person .dv .ic { width:24px; height:24px; }
+  .person span { max-width:68px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .person.sel .av, .person.sel .dv { transform:scale(1.07); animation:selGlow 2.4s ease-in-out infinite; }
+  @keyframes selGlow { 0%, 100% { box-shadow:0 0 0 2px #fff, 0 0 0 4px #4b8dff, 0 0 18px rgba(75,141,255,.6); } 50% { box-shadow:0 0 0 2px #fff, 0 0 0 5px #6aa8ff, 0 0 34px rgba(75,141,255,.95); } }
+  .person span { transition:color .3s; } .person.sel span { color:#fff; }
+  .person.catch .av, .person.catch .dv { animation:catchIt .7s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes catchIt { 0% { transform:scale(1.07); } 30% { transform:scale(.86); box-shadow:0 0 0 2px #fff, 0 0 0 6px #9cc4ff, 0 0 50px rgba(150,200,255,1); } 100% { transform:scale(1.07); } }
+  #vis { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--dim); }
+  #vis i { position:relative; width:34px; height:20px; border-radius:99px; background:rgba(255,255,255,.12); transition:background .3s; box-shadow:inset 0 1px 2px rgba(0,0,0,.4); }
+  #vis i::after { content:""; position:absolute; left:2px; top:2px; width:16px; height:16px; border-radius:50%; background:#fff; box-shadow:0 2px 6px rgba(0,0,0,.4); transition:transform .35s cubic-bezier(.2,1.4,.4,1); }
+  #vis.on i { background:linear-gradient(180deg,#4b8dff,#2a62f0); box-shadow:0 0 12px rgba(75,141,255,.6); } #vis.on i::after { transform:translateX(14px); }
   .big { width:100%; max-height:55vh; object-fit:contain; border-radius:18px; margin-top:16px; background:#000; }
 
   main { flex:1; display:flex; flex-direction:column; min-height:0; gap:18px; }
@@ -250,6 +269,8 @@
       <input type="file" id="scanIn" accept="image/*" multiple class="hidden" />
     </div>
     <div class="col">
+      <div class="sec"><h2>Nearby</h2><button id="vis"></button></div>
+      <div class="people" id="people"></div>
       <div class="sec"><h2>Received</h2><button id="clear" class="hidden">Clear</button></div>
       <div class="folders" id="folders"><div class="empty">Nothing yet</div></div>
     </div>
@@ -374,13 +395,15 @@ function connectBroker(i) {
 }
 const pub = (topic, msg) => mq?.connected && mq.publish(topic, JSON.stringify({ ...msg, from: me.id, name: me.name, kind: me.kind, model: me.model }));
 const toDev = (id, msg) => pub(`${T}/dev/${id}`, msg);
-function hello() { pub(`${T}/room/${room}`, { type: 'hello' }); for (const id in trusted) toDev(id, { type: 'hello' }); }
+if (me.visible === undefined) { me.visible = true; store.set('me', me); }
+if (me.avatar && !me.avatarSm) { const i = new Image(); i.onload = () => { const c = document.createElement('canvas'); c.width = c.height = 48; c.getContext('2d').drawImage(i, 0, 0, 48, 48); me.avatarSm = c.toDataURL('image/jpeg', .7); store.set('me', me); }; i.src = me.avatar; }
+function hello() { pub(`${T}/room/${room}`, { type: 'hello', ...(me.visible ? { open: 1, av: me.avatarSm || '' } : {}) }); for (const id in trusted) toDev(id, { type: 'hello' }); }
 setInterval(hello, 5000);
 
 function seen(m) {
   if (m.from === me.id) return null;
   let p = peers.get(m.from); if (!p) { p = { id: m.from }; peers.set(m.from, p); }
-  p.name = m.name; p.kind = m.kind; p.seen = Date.now(); if (m.model) p.model = m.model; if (m.helper) p.helperSeen = Date.now();
+  p.name = m.name; p.kind = m.kind; p.seen = Date.now(); if (m.type === 'hello') { p.open = !!m.open; if (m.av) p.av = m.av; } if (m.model) p.model = m.model; if (m.helper) p.helperSeen = Date.now();
   if (trusted[p.id] && trusted[p.id] !== p.name) { trusted[p.id] = p.name; store.set('trusted', trusted); }
   return p;
 }
@@ -411,7 +434,7 @@ async function onSignal(m) {
   if (m.type === 'code-join' && pending?.code) { pending = null; acceptSheet(p, '<p>Entered your code</p>'); }
   if (m.type === 'pair-ok' && pending && (pending.id === p.id || pending.joining)) { pending = null; trust(p); closeSheet(); paired(p); }
   if (m.type === 'pair-no' && pending) { pending = null; closeSheet(); toast(p.name + ' declined'); }
-  if (m.type === 'sig' && trusted[p.id]) onRtc(p, m.data);
+  if (m.type === 'sig' && (trusted[p.id] || me.visible)) onRtc(p, m.data);
   if (m.type === 'res' && keys[p.id]) onRes(p, m);
 }
 function trust(p) { trusted[p.id] = p.name; store.set('trusted', trusted); renderDevices(); }
@@ -473,7 +496,7 @@ function setupDc(p, dc) {
     if (typeof e.data !== 'string') { if (cur) { cur.parts.push(e.data); cur.got += e.data.byteLength; batch.got += e.data.byteLength; if (batch.total) island(p.name, `Receiving · ${Math.round(100 * batch.got / batch.total)}%`, batch.got / batch.total); } return; }
     const m = JSON.parse(e.data);
     if (m.t === 'profile') { if (m.avatar) setAvatar(p.id, m.avatar); if (m.model) p.model = m.model; return; }
-    if (m.t === 'ring') { ringMe(p.name); return; }
+    if (m.t === 'ring') { if (trusted[p.id]) ringMe(p.name); return; }
     if (m.t === 'offer') { offerSheet(p, m); return; }
     if (m.t === 'cancel') { if ($('#sheet').dataset.k === 'offer:' + m.id) { closeSheet(); toast(p.name + ' cancelled'); } return; }
     if ((m.t === 'accept' || m.t === 'decline') && outgoing?.id === m.id) { outgoing.done(m); return; }
@@ -501,10 +524,21 @@ async function thumb(f) {
 let outgoing = null; // offer waiting for an answer
 $('#island').onclick = () => { if (outgoing) { outgoing.cancel(); } };
 
-async function sendBatch(items) {
-  const to = live();
-  if (!to.length) { toast(Object.keys(trusted).length ? 'Open Flick on your other device' : 'Pair a device first'); return false; }
-  const p = to[0], dc = p.dc, id = rid(4);
+let sel = null; // chosen person to send to
+const selPeer = () => { const p = sel && peers.get(sel); return p && Date.now() - p.seen < 15000 ? p : null; };
+const targetPeer = () => selPeer() || live()[0] || null;
+async function ensureLink(p) {
+  if (isOn(p)) return true;
+  if (!p.pc) makePc(p, true);
+  for (let i = 0; i < 60 && !isOn(p); i++) await new Promise((r) => setTimeout(r, 200));
+  return isOn(p);
+}
+async function sendBatch(items, target) {
+  const p = target || targetPeer();
+  if (!p) { toast(Object.keys(trusted).length ? 'Open Flick on your other device' : 'Tap someone in Nearby, or pair a device'); return false; }
+  if (!isOn(p)) { island(p.name, 'Connecting', null); if (!(await ensureLink(p))) { island(p.name, 'Couldn’t connect', null); return false; } }
+  const dc = p.dc, id = rid(4);
+  const av = $(`#people .person[data-id="${p.id}"]`); if (av) { av.classList.remove('catch'); void av.offsetWidth; av.classList.add('catch'); setTimeout(() => av.classList.remove('catch'), 800); }
   const meta = await Promise.all(items.map(async (x) => isT(x) ? { text: x.text } : { name: x.name, size: x.size, type: x.type, thumb: await thumb(x) }));
   wave('up'); buzz([10, 30, 10]);
   dc.send(JSON.stringify({ t: 'offer', id, items: meta }));
@@ -551,8 +585,25 @@ function offerSheet(p, m) {
 }
 
 // ---------- devices (no chips, one quiet sheet) ----------
-function renderDevices() { renderTitle(); if ($('#modal').classList.contains('show') && $('#sheet').dataset.k === 'dev') devSheet(); }
+function renderDevices() { renderTitle(); renderPeople(); if ($('#modal').classList.contains('show') && $('#sheet').dataset.k === 'dev') devSheet(); }
 setInterval(renderDevices, 4000);
+function renderPeople() {
+  const now = Date.now(), list = [...peers.values()].filter((p) => now - p.seen < 15000 && (trusted[p.id] || p.open));
+  if (sel && !list.find((p) => p.id === sel)) sel = null;
+  const def = !sel && live()[0];
+  const key = list.map((p) => p.id + p.name + (avatars[p.id] || p.av || '').length).join('|');
+  const isSel = (id) => sel === id || (def && def.id === id);
+  if (key === renderPeople.key) { $('#people').querySelectorAll('.person').forEach((el) => el.classList.toggle('sel', isSel(el.dataset.id))); }
+  else { renderPeople.key = key;
+  $('#people').innerHTML = list.length ? list.map((p, i) => {
+    const src = avatars[p.id] || p.av;
+    return `<div class="person${isSel(p.id) ? ' sel' : ''}" style="--i:${i}" data-id="${p.id}">${src ? avatarHtml(src, p.name) : `<div class="dv">${ico(p.kind === 'phone' ? 'phone' : 'laptop')}</div>`}<span>${esc(p.name.split(/[’']s /)[0])}</span></div>`;
+  }).join('') : '<div class="empty" style="padding:6px 4px">No one nearby with Flick open</div>';
+  $('#people').querySelectorAll('.person').forEach((el) => (el.onclick = () => { sel = sel === el.dataset.id ? null : el.dataset.id; buzz(8); renderPeople(); renderTitle(); })); }
+  $('#vis').innerHTML = `${me.visible ? 'Visible' : 'Hidden'}<i></i>`; $('#vis').classList.toggle('on', !!me.visible);
+}
+$('#vis').onclick = () => { me.visible = !me.visible; store.set('me', me); hello(); renderPeople(); toast(me.visible ? 'Nearby people can see you' : 'Only paired devices can see you'); };
+setInterval(renderPeople, 3000);
 function devSheet() {
   const now = Date.now(), near = [...peers.values()].filter((p) => now - p.seen < 15000);
   const mine = Object.entries(trusted), others = near.filter((p) => !trusted[p.id]);
@@ -673,10 +724,10 @@ const isOn = (p) => p?.dc?.readyState === 'open';
 const remoteOk = (p) => !!(p && keys[p.id] && Date.now() - (p.helperSeen || 0) < 20000);
 function renderTitle() {
   $('#title').innerHTML = isPhone ? (picked.length ? `${picked.length} ready.<br><span>Flick to send.</span>` : 'Flick to send.') : 'Throw to send.';
-  const p = live()[0] || [...peers.values()].find(remoteOk);
+  const p = selPeer() || live()[0] || [...peers.values()].find(remoteOk);
   const el = $('#link');
   if (!p) { el.innerHTML = `${avatarHtml(me.avatar, me.name)}<div class="wire off"></div><div class="dv">${ico(isPhone ? 'laptop' : 'phone')}</div><div><b>${Object.keys(trusted).length ? 'Not connected' : 'Pair a device'}</b><small>${Object.keys(trusted).length ? 'Open Flick on your other device' : 'Tap to start'}</small></div>`; }
-  else el.innerHTML = `${avatarHtml(me.avatar, me.name)}<div class="wire"></div>${avatars[p.id] ? avatarHtml(avatars[p.id], p.name) : devIcon(p)}<div><b>${esc(p.name)}</b><small>${esc(p.model || (p.kind === 'phone' ? 'Phone' : 'Computer'))}${isOn(p) ? '' : ' · Remote'}</small></div>`;
+  else el.innerHTML = `${avatarHtml(me.avatar, me.name)}<div class="wire"></div>${(avatars[p.id] || p.av) ? avatarHtml(avatars[p.id] || p.av, p.name) : devIcon(p)}<div><b>${esc(p.name)}</b><small>${esc(p.model || (p.kind === 'phone' ? 'Phone' : 'Computer'))}${isOn(p) || !remoteOk(p) ? '' : ' · Remote'}</small></div>`;
   el.onclick = devSheet;
   const ph = live().find((x) => x.kind === 'phone'); $('#ringBtn').classList.toggle('hidden', isPhone || !ph);
   $('#ringBtn').innerHTML = ico('bell') + 'Ring phone';
@@ -705,7 +756,7 @@ function previewSheet(i) {
 }
 async function flick() {
   if (!picked.length) return toast('Add something first');
-  if (!live().length) return toast(Object.keys(trusted).length ? 'Open Flick on your other device' : 'Pair a device first');
+  if (!targetPeer()) return toast(Object.keys(trusted).length ? 'Open Flick on your other device' : 'Tap someone in Nearby, or pair a device');
   const files = picked; picked = [];
   if (outgoing) return toast('Wait for the last send');
   tray.querySelectorAll('.tile').forEach((t, i) => flyUp(t, i * 120));
@@ -787,7 +838,7 @@ if (!isPhone) {
       if (!s) return; s = null;
       const a = trail[0], b = trail[trail.length - 1];
       if ((b.y - a.y) / Math.max(1, b.t - a.t) > -0.7 && py > -30) return;
-      if (!live().length) return toast(Object.keys(trusted).length ? 'Open Flick on your iPhone' : 'Pair a device first');
+      if (!targetPeer()) return toast(Object.keys(trusted).length ? 'Open Flick on your iPhone' : 'Tap someone in Nearby, or pair a device');
       flyUp(c);
       setTimeout(() => { c.remove(); if (!stage.querySelector('.chip')) { hint.classList.remove('hidden'); stage.classList.remove('ready'); } }, 1750);
       sendBatch([file]);
@@ -801,7 +852,9 @@ $('#photoIn').onchange = async (e) => {
   const img = new Image(); img.src = URL.createObjectURL(f); await img.decode();
   const c = document.createElement('canvas'), n = 128, m = Math.min(img.width, img.height); c.width = c.height = n;
   c.getContext('2d').drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, n, n);
-  me.avatar = c.toDataURL('image/jpeg', .8); store.set('me', me);
+  me.avatar = c.toDataURL('image/jpeg', .8);
+  const sm = document.createElement('canvas'); sm.width = sm.height = 48; sm.getContext('2d').drawImage(c, 0, 0, 48, 48); me.avatarSm = sm.toDataURL('image/jpeg', .7);
+  store.set('me', me); hello();
   live().forEach((p) => p.dc.send(JSON.stringify({ t: 'profile', avatar: me.avatar, model: me.model })));
   renderTitle(); devSheet();
 };
@@ -940,6 +993,17 @@ function padSheet(p, typing) {
   pad.ontouchend = (e) => { e.preventDefault(); if (e.touches.length) return; if (moved < 8 && Date.now() - t0 < 300) { cmd(p.id, two ? 'rclick' : 'click'); buzz(8); } two = false; };
 }
 if (isPhone) $('#remote').onclick = remoteSheet;
+
+// ---------- Edge Drop (Flick for Windows) ----------
+if (window.flickDesktop) {
+  window.flickDesktop.onFiles(async (list) => {
+    const files = list.map((x) => new File([x.data], x.name, { type: x.type || '' }));
+    const p = targetPeer();
+    if (!p) { toast('Open Flick on your phone to send'); window.flickDesktop.result(false); return; }
+    window.flickDesktop.result(await sendBatch(files, p));
+  });
+  setInterval(() => { const p = targetPeer(); window.flickDesktop.target(p ? { name: p.name, av: avatars[p.id] || p.av || '' } : null); }, 2000);
+}
 
 renderDevices();
 start();

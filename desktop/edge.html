@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+  html, body { margin:0; height:100%; background:transparent; overflow:hidden; font:13px "Segoe UI Variable","Segoe UI",sans-serif; color:#eaf1ff; user-select:none; }
+  .strip { position:absolute; right:0; top:0; bottom:0; width:3px; background:linear-gradient(180deg,transparent,rgba(90,150,255,.45),transparent); background-size:100% 200%; animation:shimmer 4s ease-in-out infinite; }
+  @keyframes shimmer { 0%, 100% { background-position:0 0; opacity:.5; } 50% { background-position:0 100%; opacity:1; } }
+  .panel { position:absolute; inset:10px 10px 10px 10px; border-radius:26px; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center;
+           background:rgba(10,14,24,.78); backdrop-filter:blur(30px); border:1px solid rgba(255,255,255,.16);
+           box-shadow:inset 0 0 50px 10px rgba(90,150,255,.35), inset 0 1px 0 rgba(255,255,255,.3); animation:in .35s cubic-bezier(.2,1,.3,1); }
+  body.open .panel { display:flex; } body.open .strip { display:none; }
+  .panel { transition:transform .3s cubic-bezier(.2,1.4,.4,1), box-shadow .3s; }
+  @keyframes in { 0% { transform:translateX(60px) scale(.9); opacity:0; } 60% { transform:translateX(-6px) scale(1.01); opacity:1; } 100% { transform:none; } }
+  body.over .panel { transform:scale(1.03); box-shadow:inset 0 0 70px 18px rgba(120,175,255,.55), inset 0 1px 0 rgba(255,255,255,.4); }
+  .av { animation:breathe 2.4s ease-in-out infinite; transition:transform .35s cubic-bezier(.2,1.5,.4,1); }
+  @keyframes breathe { 50% { box-shadow:0 0 0 3px rgba(255,255,255,.2), 0 0 60px rgba(110,170,255,1); } }
+  body.over .av { transform:scale(1.12); }
+  .av { width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg,#6aa8ff,#2f5bff) center/cover; box-shadow:0 0 0 3px rgba(255,255,255,.15), 0 0 40px rgba(80,150,255,.8); display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:600; }
+  b { font-size:16px; } small { color:#93a0b8; }
+  body.sent .panel { animation:out .7s cubic-bezier(.5,0,.2,1) forwards; }
+  @keyframes out { to { transform:translateX(120%) scaleY(.6); opacity:0; filter:brightness(2) blur(4px); } }
+</style></head>
+<body>
+  <div class="strip"></div>
+  <div class="panel"><div class="av" id="av"></div><b id="t">Drop to send</b><small id="s">Open Flick on your phone</small></div>
+<script>
+  let target = null, timer;
+  const $ = (i) => document.getElementById(i);
+  function paint() {
+    $('t').textContent = target ? 'Drop to send' : 'No device connected';
+    $('s').textContent = target ? 'to ' + target.name : 'Open Flick on your phone';
+    $('av').style.backgroundImage = target?.av ? `url('${target.av}')` : '';
+    $('av').textContent = target?.av ? '' : (target?.name?.[0] || '•').toUpperCase();
+  }
+  edge.onTarget((t) => { target = t; paint(); });
+  edge.onResult((ok) => { $('s').textContent = ok ? 'Sent' : 'Not sent'; });
+  const open = () => { clearTimeout(timer); if (!document.body.classList.contains('open')) { document.body.className = 'open'; edge.open(true); paint(); } document.body.classList.add('over'); };
+  const close = (d = 250) => { clearTimeout(timer); timer = setTimeout(() => { document.body.className = ''; edge.open(false); }, d); };
+  addEventListener('dragenter', (e) => { e.preventDefault(); open(); });
+  addEventListener('dragover', (e) => { e.preventDefault(); open(); });
+  addEventListener('dragleave', (e) => { document.body.classList.remove('over'); if (!e.relatedTarget) close(); });
+  addEventListener('drop', (e) => {
+    e.preventDefault(); if (!e.dataTransfer.files.length) return close(0);
+    edge.drop(e.dataTransfer.files);
+    if (target) { document.body.className = 'open sent'; close(900); } else close(1500);
+  });
+</script></body></html>
